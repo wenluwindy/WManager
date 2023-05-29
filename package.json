@@ -1,0 +1,18 @@
+{
+  "name": "wmanager",
+  "version": "1.4.1",
+  "displayName": "WManager",
+  "description": "一个简单易用的Unity管理器框架。",
+  "unity": "2019.4",
+  "keywords": [
+    "window",
+    "management",
+    "plugin",
+    "unity"
+  ],
+  "author": {
+    "name": "纹路风",
+    "email": "1396654433@qq.com"
+  },
+  "license": "MIT"
+}
