@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using WManager.UI;
 
 [RequireComponent(typeof(CanvasGroup))]
-public class UIViewBase : UIView
+public class CustomScript : UIView
 {
     void Start()
     {
