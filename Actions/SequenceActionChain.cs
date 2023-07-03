@@ -12,7 +12,7 @@ namespace WManager
 
         protected override void OnInvoke()
         {
-            if(stopWhen != null && stopWhen.Invoke())
+            if (stopWhen != null && stopWhen.Invoke())
             {
                 isCompleted = true;
             }
@@ -36,6 +36,7 @@ namespace WManager
                 }
                 else
                 {
+                    loops = 1;
                     isCompleted = true;
                 }
             }

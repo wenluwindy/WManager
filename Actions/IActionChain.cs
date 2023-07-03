@@ -1,3 +1,4 @@
+using System;
 using UnityEngine.Events;
 
 namespace WManager
@@ -24,9 +25,13 @@ namespace WManager
         /// </summary>
         void Pause();
         /// <summary>
-        /// 重启事件链
+        /// 恢复事件链
         /// </summary>
         void Resume();
+        /// <summary>
+        /// 重启事件链
+        /// </summary>
+        void Reset();
 
         bool IsPaused { get; }
 
