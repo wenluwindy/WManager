@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
@@ -40,7 +39,7 @@ namespace WManager
             {
                 initialized = true;
                 HttpRetry = 5;
-                HttpRetryInterval = 1;
+                HttpRetryInterval = 0.5f;
                 DontDestroyOnLoad(this);
             }
         }
@@ -74,7 +73,7 @@ namespace WManager
         /// <summary>
         /// Http调用失败后重试间隔（秒）
         /// </summary>
-        public static int HttpRetryInterval { get; private set; }
+        public static float HttpRetryInterval { get; private set; }
         // 定义一个静态字符串变量来保存Post请求的Content-Type
         public static string PostContentType = "application/json";
 

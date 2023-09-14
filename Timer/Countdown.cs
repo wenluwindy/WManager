@@ -75,6 +75,7 @@ namespace WManager
 
         public void Launch()
         {
+            IsCompleted = false;
             beginTime = isIgnoreTimeScale ? Time.realtimeSinceStartup : Time.time;
             onLaunch?.Invoke();
             this.Begin(executer != null ? executer : Timer.Instance);
