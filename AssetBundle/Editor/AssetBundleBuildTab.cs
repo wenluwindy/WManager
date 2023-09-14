@@ -159,7 +159,7 @@ namespace AssetBundleBrowser
                 "生成完成后，将所有生成内容复制到" + m_streamingPath + "用于本地播放",
                 m_UserData.m_OnToggles);
 
-            m_TargetContent = new GUIContent("打包目标", "选择要为其打包的目标平台");
+            m_TargetContent = new GUIContent("打包目标平台", "选择要为其打包的目标平台");
             m_CompressionContent = new GUIContent("压缩类型", "不压缩、标准（LZMA）或基于块的（LZ4）");
 
             if (m_UserData.m_UseDefaultPath)
@@ -174,7 +174,7 @@ namespace AssetBundleBrowser
             bool newState = false;
             var centeredStyle = new GUIStyle(GUI.skin.GetStyle("Label"));
             centeredStyle.alignment = TextAnchor.UpperCenter;
-            GUILayout.Label(new GUIContent("打包设置案例"), centeredStyle);
+            GUILayout.Label(new GUIContent("打包设置"), centeredStyle);
             //basic options
             EditorGUILayout.Space();
             GUILayout.BeginVertical();

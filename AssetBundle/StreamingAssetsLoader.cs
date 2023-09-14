@@ -115,20 +115,25 @@ namespace WManager
                     audioType = AudioType.AIFF;
                     break;
                 default:
-                    audioType = AudioType.MPEG;
+                    audioType = AudioType.UNKNOWN;
                     break;
             }
 
-            UnityWebRequest unityWebRequest = UnityWebRequestMultimedia.GetAudioClip(GetAbsolutePath(mediaName), audioType);
-            yield return unityWebRequest.SendWebRequest();
-
-
-            if (unityWebRequest.error != null)
-                Debug.Log(unityWebRequest.error);
+            if (audioType == AudioType.UNKNOWN)
+            {
+                //Debug.Log("不支持的音频格式,跳过");
+            }
             else
             {
-                if (action != null)
-                    action(DownloadHandlerAudioClip.GetContent(unityWebRequest));
+                UnityWebRequest unityWebRequest = UnityWebRequestMultimedia.GetAudioClip(GetAbsolutePath(mediaName), audioType);
+                yield return unityWebRequest.SendWebRequest();
+
+                if (unityWebRequest.error != null)
+                    Debug.Log(unityWebRequest.error);
+                else
+                {
+                    action?.Invoke(DownloadHandlerAudioClip.GetContent(unityWebRequest));
+                }
             }
         }
     }
