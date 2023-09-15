@@ -90,11 +90,11 @@ namespace WManager
         /// </summary>
         /// <param name="mediaName">音频名称:.mp4,.ogg,.wav,.aiff,.mpeg</param>
         /// <param name="action">音频回调方法</param>
-        public static void LoadAudioAsset(string mediaName, UnityAction<AudioClip> action = null)
+        public static void LoadAudioAsset(string mediaName, UnityAction<AudioClip> action)
         {
             Instance.StartCoroutine(IAudioClipReader(mediaName, action));
         }
-        static IEnumerator IAudioClipReader(string mediaName, UnityAction<AudioClip> action = null)
+        static IEnumerator IAudioClipReader(string mediaName, UnityAction<AudioClip> action)
         {
             FileInfo fileInfo = new FileInfo(GetAbsolutePath(mediaName));
             string fileExtension = fileInfo.Extension;

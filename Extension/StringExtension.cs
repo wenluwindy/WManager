@@ -637,10 +637,10 @@ namespace WManager
                 return "错误";
             }
         }
-        /// <summary>
-        /// 获取MAC地址
-        /// </summary>
-        /// <returns>mac地址</returns>
+        // /// <summary>
+        // /// 获取MAC地址，仅在exe程序中可使用
+        // /// </summary>
+        // /// <returns>mac地址</returns>
         // public static string GetMacAddress()
         // {
         //     string physicalAddress = "";
@@ -667,6 +667,10 @@ namespace WManager
 
         //     return physicalAddress;
         // }
+
+        /// <summary>
+        /// 获取MAC地址，在webgl中可使用
+        /// </summary>
         public static string GetMacAddress()
         {
             string uniqueIdentifier = PlayerPrefs.GetString("UniqueIdentifier");
@@ -681,7 +685,11 @@ namespace WManager
 
             return uniqueIdentifier;
         }
-        //生成随机字符串
+        /// <summary>
+        /// 生成随机字符串
+        /// </summary>
+        /// <param name="length">长度</param>
+        /// <returns></returns>
         public static string RandomString(int length)
         {
             System.Random random = new System.Random();

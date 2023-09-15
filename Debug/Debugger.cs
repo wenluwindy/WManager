@@ -45,9 +45,9 @@ namespace WManager
 #if UNITY_5
 			Application.logMessageReceived += LogHandler;
 #else
-                Application.RegisterLogCallback(LogHandler);
+                //Application.RegisterLogCallback(LogHandler);
+                Application.logMessageReceived += LogHandler;
 #endif
-                //Application.logMessageReceived += LogHandler;
             }
         }
         private void Update()
@@ -75,9 +75,9 @@ namespace WManager
 #if UNITY_5
 			Application.logMessageReceived -= LogHandler;
 #else
-                Application.RegisterLogCallback(null);
+                //Application.RegisterLogCallback(null);
+                Application.logMessageReceived -= LogHandler;
 #endif
-                //Application.logMessageReceived -= LogHandler;
             }
         }
         private void LogHandler(string condition, string stackTrace, LogType type)

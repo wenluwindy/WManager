@@ -22,7 +22,7 @@ namespace WManager
                     if (instance == null)
                     {
                         // 创建gameObject并添加组件
-                        instance = (new GameObject("WebRequest")).AddComponent<WebRequest>();
+                        instance = new GameObject("WebRequest").AddComponent<WebRequest>();
                     }
                 }
                 return instance;

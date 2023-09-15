@@ -188,7 +188,7 @@ namespace AssetBundleBrowser
 
             float toolbarWidth = position.width - k_ToolbarPadding * 4 - m_RefreshTexture.width;
             //string[] labels = new string[2] { "Configure", "Build"};
-            string[] labels = new string[3] { "配置", "打包", "检查" };
+            string[] labels = new string[3] { "浏览", "打包", "检查" };
             m_Mode = (Mode)GUILayout.Toolbar((int)m_Mode, labels, "LargeButton", GUILayout.Width(toolbarWidth) );
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();

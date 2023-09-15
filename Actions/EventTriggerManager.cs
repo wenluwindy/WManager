@@ -30,9 +30,9 @@ namespace WManager
                 eventDic[go].Add(type, new List<UnityAction>());
             }
 
-            // 给GameObject添加EventTrigger组件和BoxCollider组件
+            // 给GameObject添加EventTrigger组件和Collider组件
             EventTrigger trigger = go.GetComponent<EventTrigger>() ?? go.AddComponent<EventTrigger>();
-            // BoxCollider collider = go.GetComponent<BoxCollider>() ?? go.AddComponent<BoxCollider>();
+            Collider collider = go.GetComponent<Collider>() ?? go.AddComponent<Collider>();
             // collider.isTrigger = true;//设定为AddEvent添加的BoxCollider
 
             // 在EventTrigger组件上添加type类型的事件和响应action方法
@@ -72,7 +72,7 @@ namespace WManager
                         if (trigger.triggers.Count == 0)
                         {
                             GameObject.Destroy(trigger); // 删除EventTrigger组件
-                                                         // 删除BoxCollider组件
+                            // 删除BoxCollider组件
                             // Collider collider = go.GetComponent<Collider>();
                             // if (collider is BoxCollider && (collider as BoxCollider).isTrigger)
                             //     GameObject.Destroy(collider);
