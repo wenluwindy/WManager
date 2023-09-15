@@ -2,8 +2,8 @@
 
 每个文件夹都可独立使用，需要 odin 和 dotween，
 
-- [Actions](./文档/ActionChain事件链系统使用说明v1.0.md)：事件链，顺序执行事件；
-- [AssetBundle](./文档/AssetBundle%20加载及打包使用说明v1.0.md)：AB 包管理器，打包加载 AB 包；
+- [Actions](./文档/ActionChain事件链系统使用说明.md)：事件链，顺序执行事件；
+- [AssetBundle](./文档/AssetBundle%20加载及打包使用说明.md)：AB 包管理器，打包加载 AB 包；
 - [Camera](./文档/相机工具使用说明.md)：第一人称移动，自由漫游移动，绕物相机；
 - [Debug](./文档/Debugger调试器使用说明.md)：拖入预制体实现发布后显示调试信息；
 - [event](./文档/Event%20Manager使用说明.md)：事件消息发送和接受；
