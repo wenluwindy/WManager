@@ -16,7 +16,7 @@ namespace WManager
         {
             if (!isCompleted)
             {
-                OnInvoke(); 
+                OnInvoke();
             }
             if (isCompleted)
             {

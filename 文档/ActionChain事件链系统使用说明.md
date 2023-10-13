@@ -183,3 +183,155 @@ this.Sequence()
   .Begin()
   .OnStop(() => Debug.Log("结束"));
 ```
+
+> ## 使用案例
+>
+> 一般用于顺序执行的步骤、方法
+
+### 1. 事件链一般使用案例
+
+```csharp
+//编辑事件链：序列事件链
+chain = ActionChain.Sequence()
+    //普通事件
+    .Event(() => Debug.Log("开始事件链"))
+    //延迟2秒
+    .Delay(2f)
+    //普通事件
+    .Event(() => Debug.Log("经过2秒"))
+    .Event(() => Debug.Log("等待按下A键"))
+    //直到按下键盘A键
+    .Until(() => Input.GetKeyDown(KeyCode.A))
+    //普通事件
+    .Event(() => Debug.Log("按下A键"))
+    //DoTween动画事件
+    .Tween(() => transform.DOMove(new Vector3(0f, 1f, 0f), 2f))
+    //按钮点击事件
+    .Event(() => print("等待点击" + button.name))
+    .Until(button.isClickBtn())
+    .Event(() => print("点击了" + button.name))
+    //物体点击事件
+    .Event(() => print("等待点击" + Object.name))
+    .Until(Object.isClickObj())
+    .Event(() => print("点击了" + Object.name))
+    //动画事件
+    .Event(() => print("等待动画a"))
+    .Animate(animator, "a")
+    .Event(() => print("a播放完毕"))
+
+    //嵌套一个并发事件链
+    .Append(new ConcurrentActionChain()
+        .Delay(1f, () => Debug.Log("1f"))
+        .Delay(2f, () => Debug.Log("2f"))
+        .Delay(3f, () => Debug.Log("3f"))
+        as IAction)
+    //并发事件链执行完成后 继续执行序列事件链
+
+    //定时事件
+    .Timer(3f, false, s => Debug.Log(s))
+    .Event(() => print("等待动画q"))
+    .Animation(animt, "q")
+    .Event(() => print("q播放完毕"));
+
+//执行事件链
+chain.Begin()
+.OnStop(() => Debug.Log("事件结束"));
+```
+
+### 2.上一步、下一步、跳步功能案例
+
+> 先将要用到的事件链存为不同的方法，并配置：停止后的事件（可选）、在管理器中预启动
+```csharp
+    private void Begin1()
+    {
+        //编辑事件链：序列事件链
+        var chain = ActionChain.Sequence()
+            //普通事件
+            .Event(() => Debug.Log("开始事件链1"))
+            //延迟2秒
+            .Delay(2f)
+            //普通事件
+            .Event(() => Debug.Log("经过2秒"))
+            .Event(() => Debug.Log("等待按下A键"))
+            //直到按下键盘A键
+            .Until(() => Input.GetKeyDown(KeyCode.A))
+            //普通事件
+            .Event(() => Debug.Log("按下A键"))
+            .Event(() => Debug.Log("11111111"))
+            ;
+        MethodManager.currentChain = chain;
+        MethodManager.currentChain.OnStop(() =>
+        {
+            Debug.Log("事件1结束");
+        });
+        MethodManager.currentChain.Begin();
+    }
+    private void Begin2()
+    {
+        //编辑事件链：序列事件链
+        var chain = ActionChain.Sequence()
+            //普通事件
+            .Event(() => Debug.Log("开始事件链2"))
+            //物体点击事件
+            .Event(() => print("等待点击" + Object.name))
+            .Until(Object.isClickObj())
+            .Event(() => print("点击了" + Object.name))
+            .Event(() => Debug.Log("4"))
+            .Event(() => Debug.Log("5"))
+            .Event(() => Debug.Log("6"))
+            .Event(() => Debug.Log("2222222"))
+            ;
+        MethodManager.currentChain = chain;
+        MethodManager.currentChain.OnStop(() =>
+        {
+            Debug.Log("事件2结束");
+        });
+        MethodManager.currentChain.Begin();
+    }
+    private void Begin3()
+    {
+        //编辑事件链：序列事件链
+        var chain1 = ActionChain.Sequence()
+            //普通事件
+            .Event(() => Debug.Log("开始事件链1"))
+            .Event(() => Debug.Log("等待按下S键"))
+            //直到按下键盘A键
+            .Until(() => Input.GetKeyDown(KeyCode.S))
+            //普通事件
+            .Event(() => Debug.Log("按下S键"))
+            .Event(() => Debug.Log("666666666666"))
+            ;
+        MethodManager.currentChain = chain1;
+        MethodManager.currentChain.OnStop(() =>
+        {
+            Debug.Log("事件3结束");
+        });
+        MethodManager.currentChain.Begin();
+    }
+```
+> 在初始化时将其加入方法管理器，点击上一步下一步即可查看效果
+```csharp
+public Button next;
+public Button Previous;
+void Start()
+{
+    MethodManager.AddMethod(Begin1);
+    MethodManager.AddMethod(Begin2);
+    MethodManager.AddMethod(Begin3);
+    next.onClick.AddListener(() =>
+    {
+        MethodManager.NextMethod();
+    });
+    Previous.onClick.AddListener(() =>
+    {
+        MethodManager.PreviousMethod();
+    });
+}
+```
+> 跳跃步骤：直接引用方法到按钮上，或者在脚本中直接使用**MethodManager.JumpMethod(int)**
+```csharp
+public void jump(int i)
+{
+    MethodManager.JumpMethod(i);
+}
+```

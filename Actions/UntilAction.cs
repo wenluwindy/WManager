@@ -60,10 +60,10 @@ namespace WManager
         bool start = false;
         public UntilGameObjectClickAction(GameObject gameObject, UnityAction action)
         {
-            gameObject.OnClickAddListener(OnButtonClick);
+            gameObject.OnClickAddListener(OnObjClick);
             onCompleted = () =>
             {
-                gameObject.OnClickRemoveListener(OnButtonClick);
+                gameObject.OnClickRemoveListener(OnObjClick);
                 action?.Invoke();
             };
         }
@@ -77,9 +77,9 @@ namespace WManager
             base.OnReset();
             isClick = false;
         }
-        private void OnButtonClick()
+        private void OnObjClick()
         {
-            if (start)
+            if (start && !isClick)
             {
                 isClick = true;
             }

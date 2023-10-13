@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using WManager;
 using DG.Tweening;
+using UnityEngine.Events;
+using System;
 
 ///<summary>
 ///事件链案例
@@ -14,9 +16,10 @@ public class ActionChainDemo : MonoBehaviour
     public GameObject Object;
     public Animator animator;
     public Animation animt;
-    IActionChain chain;
-    IActionChain chain2;
-    IActionChain chain3;
+    // IActionChain chain;
+
+    public Button next;
+    public Button Previous;
     // Start is called before the first frame update
     void Start()
     {
@@ -66,38 +69,87 @@ public class ActionChainDemo : MonoBehaviour
         // chain.Begin()
         // .OnStop(() => Debug.Log("事件结束"));
 
-        bool A = true;
-        chain2 = ActionChain.Sequence()
+
+        MethodManager.AddMethod(Begin1);
+        MethodManager.AddMethod(Begin2);
+        MethodManager.AddMethod(Begin3);
+        next.onClick.AddListener(() =>
+        {
+            MethodManager.NextMethod();
+        });
+        Previous.onClick.AddListener(() =>
+        {
+            MethodManager.PreviousMethod();
+        });
+    }
+    public void jump(int i)
+    {
+        MethodManager.JumpMethod(i);
+    }
+    private void Begin1()
+    {
+        //编辑事件链：序列事件链
+        var chain = ActionChain.Sequence()
+            //普通事件
+            .Event(() => Debug.Log("开始事件链1"))
+            //延迟2秒
+            .Delay(2f)
+            //普通事件
+            .Event(() => Debug.Log("经过2秒"))
+            .Event(() => Debug.Log("等待按下A键"))
+            //直到按下键盘A键
+            .Until(() => Input.GetKeyDown(KeyCode.A))
+            //普通事件
+            .Event(() => Debug.Log("按下A键"))
+            .Event(() => Debug.Log("11111111"))
+            ;
+        MethodManager.currentChain = chain;
+        MethodManager.currentChain.OnStop(() =>
+        {
+            Debug.Log("事件1结束");
+        });
+        MethodManager.currentChain.Begin();
+    }
+    private void Begin2()
+    {
+        //编辑事件链：序列事件链
+        var chain = ActionChain.Sequence()
             //普通事件
             .Event(() => Debug.Log("开始事件链2"))
-            .Event(() => A = true)
-            .Event(() => Debug.Log("A" + A))
-            .Event(() => Object.GetComponent<BoxCollider>().enabled = A)
+            //物体点击事件
+            .Event(() => print("等待点击" + Object.name))
+            .Until(Object.isClickObj())
+            .Event(() => print("点击了" + Object.name))
+            .Event(() => Debug.Log("4"))
+            .Event(() => Debug.Log("5"))
+            .Event(() => Debug.Log("6"))
+            .Event(() => Debug.Log("2222222"))
             ;
-        chain3 = ActionChain.Sequence()
-                    //普通事件
-                    .Event(() => Debug.Log("开始事件链3"))
-                    .Event(() => A = false)
-                    .Event(() => Debug.Log("A" + A))
-                    .Event(() => Object.GetComponent<BoxCollider>().enabled = A)
-                    ;
-
-        chain2.Begin();
+        MethodManager.currentChain = chain;
+        MethodManager.currentChain.OnStop(() =>
+        {
+            Debug.Log("事件2结束");
+        });
+        MethodManager.currentChain.Begin();
     }
-
-    public void aaaa()
+    private void Begin3()
     {
-        chain2.Stop();
-        chain3.Stop();
-        chain2.Reset(); // 重置状态
-        chain2.Begin();
-
-    }
-    public void bbb()
-    {
-        chain2.Stop();
-        chain3.Stop();
-        chain3.Reset(); // 重置状态
-        chain3.Begin();
+        //编辑事件链：序列事件链
+        var chain1 = ActionChain.Sequence()
+            //普通事件
+            .Event(() => Debug.Log("开始事件链1"))
+            .Event(() => Debug.Log("等待按下S键"))
+            //直到按下键盘A键
+            .Until(() => Input.GetKeyDown(KeyCode.S))
+            //普通事件
+            .Event(() => Debug.Log("按下S键"))
+            .Event(() => Debug.Log("666666666666"))
+            ;
+        MethodManager.currentChain = chain1;
+        MethodManager.currentChain.OnStop(() =>
+        {
+            Debug.Log("事件3结束");
+        });
+        MethodManager.currentChain.Begin();
     }
 }
