@@ -69,6 +69,15 @@ namespace WManager
         {
             Instance.StartCoroutine(ITextureReader(mediaName, action));
         }
+        /// <summary>
+        /// 网络加载图片
+        /// </summary>
+        /// <param name="urlName">图片网址</param>
+        /// <param name="action">回调图片</param>
+        public static void LoadWebTexture(string urlName, UnityAction<Texture2D> action)
+        {
+            Instance.StartCoroutine(ITextureReader2(urlName, action));
+        }
         static IEnumerator ITextureReader(string mediaName, UnityAction<Texture> action)
         {
             UnityWebRequest unityWebRequest = UnityWebRequestTexture.GetTexture(GetAbsolutePath(mediaName));
@@ -78,11 +87,23 @@ namespace WManager
                 Debug.Log(unityWebRequest.error);
             else
             {
-                byte[] bts = unityWebRequest.downloadHandler.data;
-                if (action != null)
-                {
-                    action(DownloadHandlerTexture.GetContent(unityWebRequest));
-                }
+                action?.Invoke(DownloadHandlerTexture.GetContent(unityWebRequest));
+            }
+        }
+        static IEnumerator ITextureReader2(string urlName, UnityAction<Texture2D> action)
+        {
+            UnityWebRequest request = UnityWebRequestTexture.GetTexture(urlName);
+            yield return request.SendWebRequest();
+
+            if (request.error != null)
+            {
+                Debug.Log(request.error);
+            }
+            else
+            {
+                // 下载的图片
+                var texture = DownloadHandlerTexture.GetContent(request);
+                action?.Invoke(texture);
             }
         }
         /// <summary>

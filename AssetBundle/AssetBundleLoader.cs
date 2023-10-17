@@ -72,6 +72,7 @@ namespace WManager
         static IEnumerator LoadGameObjectFromFileAsyncCoroutine(string path, string name, UnityAction<GameObject, float> callBack)
         {
             AssetBundleCreateRequest request = AssetBundle.LoadFromFileAsync(GetAbsolutePath(path));
+            yield return request;
             float progress = 0;
             while (!request.isDone)
             {
@@ -102,6 +103,7 @@ namespace WManager
         private static IEnumerator LoadAssetBundleFromFileAsyncCoroutine(string path, UnityAction<AssetBundle, float> callback)
         {
             AssetBundleCreateRequest request = AssetBundle.LoadFromFileAsync(GetAbsolutePath(path));
+            yield return request;
             float progress = 0;
             while (!request.isDone)
             {
