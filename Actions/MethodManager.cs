@@ -2,9 +2,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace WManager
 {
+    /// <summary>
+    /// 方法管理器
+    /// </summary>
     public class MethodManager : MonoBehaviour
     {
         #region 单例模式
@@ -84,6 +88,14 @@ namespace WManager
             }
         }
         /// <summary>
+        /// 移除所有的方法
+        /// </summary>
+        public static void RemoveAllMethod()
+        {
+            keyMethods.Clear();
+            currentMethodIndex = -1;
+        }
+        /// <summary>
         /// 执行下一个方法
         /// </summary>
         public static void NextMethod()
@@ -99,12 +111,21 @@ namespace WManager
                 return;
             }
 
+            if (currentMethodIndex != -1)
+            {
+                EventManager.EmitEvent("下一步事件");
+                Debug.Log("发出下一步事件");
+            }
+
             //增加索引
             currentMethodIndex++;
 
-            //执行下一个事件链
-            keyMethods[currentMethodIndex]();
-            Debug.Log("开始了：" + currentMethodIndex);
+            Timer.Countdown(0.1f).OnStop(() =>
+            {
+                //执行下一个事件链
+                keyMethods[currentMethodIndex]();
+                Debug.Log("开始了：" + currentMethodIndex);
+            }).Launch();
         }
         /// <summary>
         /// 执行上一个方法
@@ -125,9 +146,14 @@ namespace WManager
             //减少索引
             currentMethodIndex--;
 
-            //执行上一个事件链
-            keyMethods[currentMethodIndex]();
-            Debug.Log("开始了：" + currentMethodIndex);
+            Timer.Countdown(0.1f).OnStop(() =>
+            {
+                //执行上一个事件链
+                keyMethods[currentMethodIndex]();
+                EventManager.EmitEvent("上一步事件");
+                Debug.Log("发出上一步事件");
+                Debug.Log("开始了：" + currentMethodIndex);
+            }).Launch();
         }
         /// <summary>
         /// 跳转步骤
@@ -149,9 +175,12 @@ namespace WManager
             //指定索引
             currentMethodIndex = i;
 
-            //执行上一个事件链
-            keyMethods[currentMethodIndex]();
-            Debug.Log("开始了：" + currentMethodIndex);
+            Timer.Countdown(0.1f).OnStop(() =>
+            {
+                //执行指定事件链
+                keyMethods[currentMethodIndex]();
+                Debug.Log("开始了：" + currentMethodIndex);
+            }).Launch();
         }
         /// <summary>
         /// 停止当前事件链

@@ -1,5 +1,5 @@
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+// using Newtonsoft.Json;
+// using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -408,75 +408,75 @@ namespace WManager
             return reg.Replace(jsonStr, strPatten);
         }
 
-        /// <summary>
-        /// 28.将XML字符串反序列化为对象
-        /// </summary>
-        /// <typeparam name="T">对象类型</typeparam>
-        /// <param name="xmlStr">XML字符串</param>
-        /// <returns></returns>
-        public static T XmlStrToObject<T>(this string xmlStr)
-        {
-            XmlDocument doc = new XmlDocument();
-            doc.LoadXml(xmlStr);
-            string jsonJsonStr = JsonConvert.SerializeXmlNode(doc);
+        // /// <summary>
+        // /// 28.将XML字符串反序列化为对象
+        // /// </summary>
+        // /// <typeparam name="T">对象类型</typeparam>
+        // /// <param name="xmlStr">XML字符串</param>
+        // /// <returns></returns>
+        // public static T XmlStrToObject<T>(this string xmlStr)
+        // {
+        //     XmlDocument doc = new XmlDocument();
+        //     doc.LoadXml(xmlStr);
+        //     string jsonJsonStr = JsonConvert.SerializeXmlNode(doc);
 
-            return JsonConvert.DeserializeObject<T>(jsonJsonStr);
-        }
+        //     return JsonConvert.DeserializeObject<T>(jsonJsonStr);
+        // }
 
-        /// <summary>
-        /// 29.将XML字符串反序列化为对象
-        /// </summary>
-        /// <param name="xmlStr">XML字符串</param>
-        /// <returns></returns>
-        public static JObject XmlStrToJObject(this string xmlStr)
-        {
-            XmlDocument doc = new XmlDocument();
-            doc.LoadXml(xmlStr);
-            string jsonJsonStr = JsonConvert.SerializeXmlNode(doc);
+        // /// <summary>
+        // /// 29.将XML字符串反序列化为对象
+        // /// </summary>
+        // /// <param name="xmlStr">XML字符串</param>
+        // /// <returns></returns>
+        // public static JObject XmlStrToJObject(this string xmlStr)
+        // {
+        //     XmlDocument doc = new XmlDocument();
+        //     doc.LoadXml(xmlStr);
+        //     string jsonJsonStr = JsonConvert.SerializeXmlNode(doc);
 
-            return JsonConvert.DeserializeObject<JObject>(jsonJsonStr);
-        }
+        //     return JsonConvert.DeserializeObject<JObject>(jsonJsonStr);
+        // }
 
-        /// <summary>
-        /// 30.将Json字符串转为List'T'
-        /// </summary>
-        /// <typeparam name="T">对象类型</typeparam>
-        /// <param name="jsonStr"></param>
-        /// <returns></returns>
-        public static List<T> ToList<T>(this string jsonStr)
-        {
-            return string.IsNullOrEmpty(jsonStr) ? null : JsonConvert.DeserializeObject<List<T>>(jsonStr);
-        }
+        // /// <summary>
+        // /// 30.将Json字符串转为List'T'
+        // /// </summary>
+        // /// <typeparam name="T">对象类型</typeparam>
+        // /// <param name="jsonStr"></param>
+        // /// <returns></returns>
+        // public static List<T> ToList<T>(this string jsonStr)
+        // {
+        //     return string.IsNullOrEmpty(jsonStr) ? null : JsonConvert.DeserializeObject<List<T>>(jsonStr);
+        // }
 
-        /// <summary>
-        /// 31.将Json字符串转为DataTable
-        /// </summary>
-        /// <param name="jsonStr">Json字符串</param>
-        /// <returns></returns>
-        public static DataTable ToDataTable(this string jsonStr)
-        {
-            return jsonStr == null ? null : JsonConvert.DeserializeObject<DataTable>(jsonStr);
-        }
+        // /// <summary>
+        // /// 31.将Json字符串转为DataTable
+        // /// </summary>
+        // /// <param name="jsonStr">Json字符串</param>
+        // /// <returns></returns>
+        // public static DataTable ToDataTable(this string jsonStr)
+        // {
+        //     return jsonStr == null ? null : JsonConvert.DeserializeObject<DataTable>(jsonStr);
+        // }
 
-        /// <summary>
-        /// 32.将Json字符串转为JObject
-        /// </summary>
-        /// <param name="jsonStr">Json字符串</param>
-        /// <returns></returns>
-        public static JObject ToJObject(this string jsonStr)
-        {
-            return jsonStr == null ? JObject.Parse("{}") : JObject.Parse(jsonStr.Replace("&nbsp;", ""));
-        }
+        // /// <summary>
+        // /// 32.将Json字符串转为JObject
+        // /// </summary>
+        // /// <param name="jsonStr">Json字符串</param>
+        // /// <returns></returns>
+        // public static JObject ToJObject(this string jsonStr)
+        // {
+        //     return jsonStr == null ? JObject.Parse("{}") : JObject.Parse(jsonStr.Replace("&nbsp;", ""));
+        // }
 
-        /// <summary>
-        /// 33.将Json字符串转为JArray
-        /// </summary>
-        /// <param name="jsonStr">Json字符串</param>
-        /// <returns></returns>
-        public static JArray ToJArray(this string jsonStr)
-        {
-            return jsonStr == null ? JArray.Parse("[]") : JArray.Parse(jsonStr.Replace("&nbsp;", ""));
-        }
+        // /// <summary>
+        // /// 33.将Json字符串转为JArray
+        // /// </summary>
+        // /// <param name="jsonStr">Json字符串</param>
+        // /// <returns></returns>
+        // public static JArray ToJArray(this string jsonStr)
+        // {
+        //     return jsonStr == null ? JArray.Parse("[]") : JArray.Parse(jsonStr.Replace("&nbsp;", ""));
+        // }
 
         /// <summary>
         /// 34.json数据转实体类,仅仅应用于单个实体类，速度非常快

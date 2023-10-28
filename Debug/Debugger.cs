@@ -1,15 +1,34 @@
 namespace WManager
 {
-    /// <summary>
-    /// 调试器
-    /// </summary>
     using UnityEngine;
     using System.Collections.Generic;
     using System;
     using UnityEngine.Profiling;
-
+    /// <summary>
+    /// 调试器
+    /// </summary>
     public class Debugger : MonoBehaviour
     {
+        public static Debugger _instance;
+        public static Debugger Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = FindObjectOfType<Debugger>();
+
+                    if (_instance == null)
+                    {
+                        GameObject singletonObject = new GameObject();
+                        _instance = singletonObject.AddComponent<Debugger>();
+                        singletonObject.name = "Debugger";
+                        DontDestroyOnLoad(singletonObject);
+                    }
+                }
+                return _instance;
+            }
+        }
         /// <summary>
         /// 是否允许调试
         /// </summary>
@@ -31,6 +50,7 @@ namespace WManager
         private Vector2 _scrollCurrentLogView = Vector2.zero;
         private Vector2 _scrollSystemView = Vector2.zero;
         private bool _expansion = false;
+        public float windowScale = 1.0f; // 缩放因子
         private Rect _windowRect = new Rect(0, 0, 100, 60);
 
         private int _fps = 0;
@@ -40,14 +60,19 @@ namespace WManager
 
         private void OnEnable()
         {
+            if (_instance == null)
+            {
+                _instance = this;
+                DontDestroyOnLoad(this);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
+
             if (AllowDebugging)
             {
-#if UNITY_5
-			Application.logMessageReceived += LogHandler;
-#else
-                //Application.RegisterLogCallback(LogHandler);
                 Application.logMessageReceived += LogHandler;
-#endif
             }
         }
         private void Update()
@@ -72,12 +97,7 @@ namespace WManager
         {
             if (AllowDebugging)
             {
-#if UNITY_5
-			Application.logMessageReceived -= LogHandler;
-#else
-                //Application.RegisterLogCallback(null);
                 Application.logMessageReceived -= LogHandler;
-#endif
             }
         }
         private void LogHandler(string condition, string stackTrace, LogType type)
@@ -123,6 +143,8 @@ namespace WManager
         private void OnGUI()
         {
             GUI.skin = mySkin;
+            // 设置缩放矩阵
+            GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(windowScale, windowScale, 1.0f));
             if (AllowDebugging)
             {
                 if (_expansion)

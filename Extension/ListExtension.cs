@@ -45,7 +45,7 @@ namespace WManager
         /// 倒序遍历
         /// </summary>
         /// <param name="action">遍历事件</param>
-        public static List<T> ForEachReverse<T>(this List<T> self, Action<int ,T> action)
+        public static List<T> ForEachReverse<T>(this List<T> self, Action<int, T> action)
         {
             for (int i = self.Count - 1; i >= 0; i--)
             {
@@ -65,6 +65,19 @@ namespace WManager
                 self.Add(t);
             }
             return self;
+        }
+        /// <summary>
+        /// 添加如果不存在，不会添加重复元素
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="list">列表</param>
+        /// <param name="item">元素</param>
+        public static void AddIfNotContains<T>(this List<T> list, T item)
+        {
+            if (!list.Contains(item))
+            {
+                list.Add(item);
+            }
         }
     }
 }

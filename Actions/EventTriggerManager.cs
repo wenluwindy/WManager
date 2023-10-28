@@ -9,177 +9,163 @@ namespace WManager
 {
     public static class EventTriggerManager
     {
+        public class ActionBase
+        {
+            public List<UnityAction> actions = new();
+            public List<UnityAction<BaseEventData>> callbacks = new();
+        }
+        public class EventRelatedGroup
+        {
+            public GameObject go;
+            public Dictionary<EventTriggerType, ActionBase> types = new();
+        }
         //用一个字典组来存储每个GameObject上不同事件类型对应的EventTriggerType和UnityAction
-        private static Dictionary<int, (GameObject, Dictionary<EventTriggerType, List<UnityAction>>)> eventDic = new();
+        private static Dictionary<int, EventRelatedGroup> eventDic = new();
 
         /// <summary>
-        /// 添加事件 
+        /// 添加事件
         /// </summary>
-        /// <param name="gameObject">游戏物体</param> 
-        /// <param name="type">事件类型</param> 
-        /// <param name="action">响应事件</param>
-        public static void AddEvent(GameObject gameObject, EventTriggerType type, UnityAction action)
+        /// <param name="gObj">要添加事件的物体</param>
+        /// <param name="type">事件类型</param>
+        /// <param name="action">事件</param>
+        public static void AddEvent(GameObject gObj, EventTriggerType type, UnityAction action)
         {
             // 检查参数合法性
-            if (gameObject == null) return;
+            if (gObj == null) return;
             //将物体改为非静态
-            gameObject.isStatic = false;
-            // 获取GameObject的实例ID
-            int instanceId = gameObject.GetInstanceID();
-
-            // 如果字典中存在这个GameObject,则查找物体下的EventTrigger组件
-            if (eventDic.ContainsKey(instanceId))
+            gObj.isStatic = false;
+            //生成唯一键值
+            int key = gObj.GetInstanceID();
+            // 如果字典中已有该GameObject
+            if (eventDic.ContainsKey(key))
             {
-                EventTriggerType triggerType = type;
-                //如果存在这个类型
-                if (eventDic[instanceId].Item2.ContainsKey(triggerType))
+                // 如果存在这个类型
+                if (eventDic[key].types.ContainsKey(type))
                 {
-                    //如果存在这个事件
-                    if (eventDic[instanceId].Item2[triggerType].Contains(action))
+                    //如果存在这个方法
+                    if (eventDic[key].types[type].actions.Contains(action))
                     {
                         return;
                     }
-                    else//不存在则添加一个事件
+                    else
                     {
-                        eventDic[instanceId].Item2[triggerType].Add(action);
+                        //添加方法
+                        eventDic[key].types[type].actions.Add(action);
+                        //添加回调
+                        void ABD(BaseEventData eventData)
+                        {
+                            TriggerEvent(action);
+                        }
+                        eventDic[key].types[type].callbacks.Add(ABD);
 
-                        // 在EventTrigger组件上添加这个type类型下的action方法
-                        EventTrigger trigger = gameObject.GetComponent<EventTrigger>();
+                        //为这个物体上的EventTrigger组件的这个类型添加事件
+                        var trigger = gObj.GetComponent<EventTrigger>();
                         EventTrigger.Entry foundEntry = trigger.triggers.Find(x => x.eventID == type);
-                        foundEntry.callback.AddListener((eventData) => { TriggerEvent(action); });
+                        foundEntry.callback.AddListener(ABD);
                     }
                 }
-                else//不存在则创建这个类型
+                else
                 {
-                    eventDic[instanceId].Item2.Add(triggerType, new List<UnityAction>());
-                    eventDic[instanceId].Item2[triggerType].Add(action);
+                    //创建类型
+                    ActionBase actionBase = new ActionBase();
+                    actionBase.actions.Add(action);
+                    void ABD(BaseEventData eventData)
+                    {
+                        TriggerEvent(action);
+                    }
+                    actionBase.callbacks.Add(ABD);
+                    //添加到字典
+                    eventDic[key].types.Add(type, actionBase);
 
-                    // 在EventTrigger组件上添加type类型的事件和响应action方法
-                    EventTrigger trigger = gameObject.GetComponent<EventTrigger>();
-                    EventTrigger.Entry entry = new EventTrigger.Entry();
-                    entry.eventID = type;
-                    entry.callback.AddListener((eventData) => { TriggerEvent(action); });
+                    //为这个物体上的EventTrigger组件添加类型及事件
+                    var trigger = gObj.GetComponent<EventTrigger>();
+                    EventTrigger.Entry entry = new()
+                    {
+                        eventID = type
+                    };
+                    entry.callback.AddListener(ABD);
                     trigger.triggers.Add(entry);
                 }
             }
-            else//不存在则创建这个物体键值对
+            else
             {
-                eventDic.Add(instanceId, (gameObject, new Dictionary<EventTriggerType, List<UnityAction>>()));
-                EventTriggerType triggerType = type;
-                eventDic[instanceId].Item2.Add(triggerType, new List<UnityAction>());
-                eventDic[instanceId].Item2[triggerType].Add(action);
-
-                // 给GameObject添加EventTrigger组件和Collider组件
-                EventTrigger trigger = gameObject.GetComponent<EventTrigger>() ?? gameObject.AddComponent<EventTrigger>();
-                Collider collider = gameObject.GetComponent<Collider>() ?? gameObject.AddComponent<Collider>();
-                // collider.isTrigger = true;//设定为AddEvent添加的BoxCollider
-
-                // 在EventTrigger组件上添加type类型的事件和响应action方法
-                EventTrigger.Entry entry = new EventTrigger.Entry();
-                entry.eventID = type;
-                entry.callback.AddListener((eventData) => { TriggerEvent(action); });
+                //创建ActionBase
+                ActionBase actionBase = new();
+                actionBase.actions.Add(action);
+                void ABD(BaseEventData eventData) => TriggerEvent(action);
+                actionBase.callbacks.Add(ABD);
+                //创建EventRelatedGroup
+                EventRelatedGroup eventRelatedGroup = new()
+                {
+                    go = gObj,
+                };
+                eventRelatedGroup.types.Add(type, actionBase);
+                //加入字典
+                eventDic.Add(key, eventRelatedGroup);
+                //在这个物体上添加EventTrigger组件和Collider组件
+                var trigger = gObj.GetComponent<EventTrigger>() ?? gObj.AddComponent<EventTrigger>();
+                var collider = gObj.GetComponent<Collider>() ?? gObj.AddComponent<Collider>();
+                //添加事件
+                EventTrigger.Entry entry = new()
+                {
+                    eventID = type
+                };
+                entry.callback.AddListener(ABD);
                 trigger.triggers.Add(entry);
             }
         }
 
         /// <summary>
         /// 移除事件
-        /// </summary> 
-        /// <param name="go">游戏物体</param> 
+        /// </summary>
+        /// <param name="go">要移除的物体</param>
         /// <param name="type">事件类型</param>
+        /// <param name="action">要移除的事件</param>
         public static void RemoveEvent(GameObject go, EventTriggerType type, UnityAction action)
         {
-            int goInstanceID = go.GetInstanceID();
-            // 如果字典中存在这个GameObject
-            if (eventDic.ContainsKey(goInstanceID))
+            // 检查参数合法性
+            if (go == null) return;
+            // 获取GameObject的实例ID
+            int key = go.GetInstanceID();
+            // 如果字典中存在该GameObject
+            if (eventDic.ContainsKey(key))
             {
-                //Debug.Log("存在物体");
-                // 如果存在这个类型
-                if (eventDic[goInstanceID].Item2.ContainsKey(type))
+                // 获取对应事件响应组
+                // 如果该组包含要移除的事件类型
+                if (eventDic[key].types.ContainsKey(type))
                 {
-                    //todo：移除指定方法无效
-                    // Debug.Log("存在类型");
-                    // List<UnityAction> actionList = eventDic[goInstanceID].Item2[type];
-                    // // 查找并移除指定的UnityAction
-                    // if (actionList.Contains(action))
-                    // {
-                    //     Debug.Log("存在方法");
-                    //     // 在EventTrigger组件上移除对应类型的事件回调
-                    //     EventTrigger trigger = go.GetComponent<EventTrigger>();
-                    //     EventTrigger.Entry foundEntry = trigger.triggers.Find(x => x.eventID == type);
-                    //     if (foundEntry != null)
-                    //     {
-                    //         foundEntry.callback.RemoveListener((eventData) => { TriggerEvent(action); });
-                    //         //移除字典内容
-                    //         actionList.Remove(action);
-                    //         Debug.Log(eventDic[goInstanceID].Item2[type].Count);
-                    //         Debug.Log("移除方法");
-                    //     }
-
-                    //     // 如果没有剩余的UnityAction，从字典中移除事件类型
-                    //     if (actionList.Count == 0)
-                    //     {
-                    //         eventDic[goInstanceID].Item2.Remove(type);
-                    //     }
-
-                    //     // 如果没有剩余的事件类型，从字典中移除GameObject的条目
-                    //     if (eventDic[goInstanceID].Item2.Count == 0)
-                    //     {
-                    //         eventDic.Remove(goInstanceID);
-                    //     }
-                    // }
-
-                    //!直接移除类型下所有方法
-                    EventTrigger trigger = go.GetComponent<EventTrigger>();
-                    List<UnityAction> actionList = eventDic[goInstanceID].Item2[type];
-
-                    // 找到要移除的事件回调
-                    EventTrigger.Entry entryToRemove = trigger.triggers.Find(entry => entry.eventID == type);
-
-                    if (entryToRemove != null)
+                    // 获取该类型的响应集合
+                    // 如果响应集合中存在要移除的响应方法
+                    if (eventDic[key].types[type].actions.Contains(action))
                     {
-                        // 从事件列表中移除找到的事件回调
-                        trigger.triggers.Remove(entryToRemove);
-                        // 从字典中移除该类型
-                        eventDic[goInstanceID].Item2.Remove(type);
-                    }
+                        int index = eventDic[key].types[type].actions.IndexOf(action);
+                        //移除物体上的EventTrigger组件中的指定方法
+                        var trigger = go.GetComponent<EventTrigger>();
+                        // 找到对应事件类型的Entry
+                        EventTrigger.Entry foundEntry = trigger.triggers.Find(x => x.eventID == type);
+                        foundEntry.callback.RemoveListener(eventDic[key].types[type].callbacks[index]);
 
-                }
-            }
-        }
-        /// <summary>
-        /// 为这个物体移除所有事件
-        /// </summary>
-        public static void RemoveAllEvent(this GameObject go)
-        {
-            int goInstanceID = go.GetInstanceID();
-            // 如果字典中存在这个GameObject
-            if (eventDic.ContainsKey(goInstanceID))
-            {
-                // 获取该GameObject对应的所有事件类型
-                Dictionary<EventTriggerType, List<UnityAction>> eventTypes = eventDic[goInstanceID].Item2;
+                        // 移除响应方法
+                        eventDic[key].types[type].actions.RemoveAt(index);
+                        // 移除对应的回调方法
+                        eventDic[key].types[type].callbacks.RemoveAt(index);
 
-                // 遍历事件类型并移除事件回调
-                foreach (var eventType in eventTypes.Keys)
-                {
-                    List<UnityAction> actionList = eventTypes[eventType];
-                    EventTrigger trigger = go.GetComponent<EventTrigger>();
-
-                    // 移除所有事件回调
-                    foreach (var action in actionList)
-                    {
-                        EventTrigger.Entry foundEntry = trigger.triggers.Find(x => x.eventID == eventType);
-                        if (foundEntry != null)
+                        // 如果响应集合为空,则移除该事件类型
+                        if (eventDic[key].types[type].actions.Count == 0)
                         {
-                            foundEntry.callback.RemoveListener((eventData) => { action(); });
+                            eventDic[key].types.Remove(type);
                         }
                     }
                 }
 
-                // 清空事件字典中与该GameObject相关的条目
-                eventDic.Remove(goInstanceID);
+                // 如果事件响应组没有任何事件类型,则从字典中移除该GameObject
+                if (eventDic[key].types.Count == 0)
+                {
+                    eventDic.Remove(key);
+                }
             }
         }
+
         private static void TriggerEvent(UnityAction action)
         {
             action.Invoke();
@@ -214,7 +200,7 @@ namespace WManager
             EventTriggerManager.AddEvent(go, type, action);
         }
         /// <summary>
-        /// 为这个物体移除所有鼠标点击事件
+        /// 为这个物体移除鼠标点击事件
         /// </summary>
         public static void OnClickRemoveListener(this GameObject go, UnityAction action, EventTriggerType type = EventTriggerType.PointerClick)
         {
@@ -228,7 +214,7 @@ namespace WManager
             EventTriggerManager.AddEvent(go, type, action);
         }
         /// <summary>
-        /// 为这个物体移除所有鼠标进入事件
+        /// 为这个物体移除鼠标进入事件
         /// </summary>
         public static void OnEnterRemoveListener(this GameObject go, UnityAction action, EventTriggerType type = EventTriggerType.PointerEnter)
         {
@@ -242,7 +228,7 @@ namespace WManager
             EventTriggerManager.AddEvent(go, type, action);
         }
         /// <summary>
-        /// 为这个物体移除所有鼠标退出事件
+        /// 为这个物体移除鼠标退出事件
         /// </summary>
         public static void OnExitRemoveListener(this GameObject go, UnityAction action, EventTriggerType type = EventTriggerType.PointerExit)
         {

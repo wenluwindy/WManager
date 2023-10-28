@@ -46,4 +46,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   AllowDebugging: 1
   AllowDebuggingHotKey: 96
+  windowScale: 2
   mySkin: {fileID: 11400000, guid: 4aafb7191514f674682e7a2a5ac4ea69, type: 2}
