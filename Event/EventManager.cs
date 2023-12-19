@@ -492,7 +492,7 @@ namespace WManager
         }
 
         /// <summary>
-        /// 返回具有给定名称的事件的整数数据(如果没有找到，则返回0)。
+        /// 返回具有给定名称的事件的整数数据(如果没有找到，则返回-1)。
         /// </summary>
         /// <param name="eventName"></param>
         /// <returns></returns>
@@ -500,11 +500,11 @@ namespace WManager
         {
             try
             {
-                if (storage.ContainsKey(eventName)) return (int)storage[eventName]; else return 0;
+                if (storage.ContainsKey(eventName)) return (int)storage[eventName]; else return -1;
             }
             catch (System.Exception)
             {
-                return 0;
+                return -1;
             }
         }
 

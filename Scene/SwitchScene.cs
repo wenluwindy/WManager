@@ -4,81 +4,72 @@ using UnityEngine;
 using UnityEngine.UI;
 using WManager;
 using Sirenix.OdinInspector;
-using TMPro;
 using UnityEngine.SceneManagement;
-using DG.Tweening;
+using WManager.UI;
 
 public class SwitchScene : MonoBehaviour
 {
-    [LabelText("要跳转的场景名")]
-    public string SceneName;
-    [LabelText("切换场景按钮")]
-    public Button JumpScene;
+    private static SwitchScene _instance;
+
+    [LabelText("切换场景视图")]
+    public UIView loadingView;
     [LabelText("切换场景模式")]
     public LoadSceneMode switchMode;
-    [LabelText("加载进度窗口")]
-    public GameObject LoadingWindow;
-    [LabelText("进度条遮罩")]
-    public Image schedule;
-    [LabelText("进度文字")]
-    public TMP_Text ProgressText;
+
+    private void Awake()
+    {
+        if (_instance == null)
+        {
+            // 如果实例为空，则将当前对象设置为实例，并保留在加载场景时不被销毁
+            _instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            // 如果实例已存在并且不是当前对象，则销毁当前对象
+            if (_instance != this)
+            {
+                Destroy(gameObject);
+            }
+        }
+    }
 
     void Start()
     {
-        // 标记该游戏对象为永不销毁
-        DontDestroyOnLoad(this.gameObject);
-        JumpScene.onClick.AddListener(OnJumpSceneClick);
+        EventManager.StartListening("切换场景", OnJumpScene);
     }
 
-    void OnJumpSceneClick()
+    void OnJumpScene()
     {
-        switch (switchMode)
+        var sValue = EventManager.GetString("切换场景");
+        if (sValue == "")
         {
-            case LoadSceneMode.Single:
-                SceneLoader.LoadSceneAsync(SceneName, LoadSceneMode.Single)
-                .OnBegin(() =>
-                {
-                    LoadingWindow.SetActive(true);
-                    LoadingWindow.GetComponent<CanvasGroup>().DOFade(1, 0.5f);
-                })
-                .OnLoading((p) =>
-                {
-                    schedule.fillAmount = p;
-                    ProgressText.text = (p * 100).ToString("0.0") + "%";
-                })
-                .OnCompleted(() =>
-                {
-                    LoadingWindow.GetComponent<CanvasGroup>().DOFade(0, 0.5f)
-                    .OnComplete(() =>
-                    {
-                        LoadingWindow.SetActive(false);
-                        Destroy(gameObject, 0.5f);
-                    });
-                });
-                break;
-            case LoadSceneMode.Additive:
-                SceneLoader.LoadSceneAsync(SceneName, LoadSceneMode.Additive)
-                .OnBegin(() =>
-                {
-                    LoadingWindow.SetActive(true);
-                    LoadingWindow.GetComponent<CanvasGroup>().DOFade(1, 0.5f);
-                })
-                .OnLoading((p) =>
-                {
-                    schedule.fillAmount = p;
-                    ProgressText.text = (p * 100).ToString("0.0") + "%";
-                })
-                .OnCompleted(() =>
-                {
-                    LoadingWindow.GetComponent<CanvasGroup>().DOFade(0, 0.5f)
-                    .OnComplete(() =>
-                    {
-                        LoadingWindow.SetActive(false);
-                        Destroy(gameObject, 0.5f);
-                    });
-                });
-                ;
-                break;
+            var iValue = EventManager.GetInt("切换场景");
+            if (iValue != -1)
+            {
+                SceneLoader.LoadSceneAsync(iValue, switchMode)
+                    .OnBegin(() => loadingView.Show())
+                    .OnCompleted(() => loadingView.Hide());
+            }
+            else
+            {
+                Debug.Log("未传入场景索引或场景名");
+            }
         }
+        else
+        {
+            SceneLoader.LoadSceneAsync(sValue, switchMode)
+                .OnBegin(() => loadingView.Show())
+                .SetSceneActivationDelay(1)
+                .OnCompleted(() =>
+                {
+                    loadingView.Hide();
+                    Invoke(nameof(CloseActive), 1.3f);
+                });
+        }
+    }
+    void CloseActive()
+    {
+        loadingView.gameObject.SetActive(false);
     }
 }
