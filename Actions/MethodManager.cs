@@ -179,6 +179,8 @@ namespace WManager
             {
                 //执行指定事件链
                 keyMethods[currentMethodIndex]();
+                EventManager.EmitEventData("跳步事件", currentMethodIndex);
+                Debug.Log("发出跳步事件,步骤索引：" + currentMethodIndex);
                 Debug.Log("开始了：" + currentMethodIndex);
             }).Launch();
         }
