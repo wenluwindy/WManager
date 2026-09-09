@@ -1,6 +1,5 @@
-using System.Collections;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -17,6 +16,11 @@ namespace WManager
         private static Dictionary<string, UnityEvent> eventDictionary = new Dictionary<string, UnityEvent>();
         private static Dictionary<string, object> sender = new Dictionary<string, object>();
         private static Dictionary<string, bool> paused = new Dictionary<string, bool>();
+
+        /// <summary>
+        /// 优先级订阅存储：eventName -> (priority, callback)。EmitEvent 时按 priority 升序调用。
+        /// </summary>
+        private static Dictionary<string, List<PriorityListener>> _priorityListeners = new Dictionary<string, List<PriorityListener>>();
 
         // 包含随发出的事件传递的数据的内存存储器。
         private static Dictionary<string, object> storage = new Dictionary<string, object>();
@@ -145,6 +149,16 @@ namespace WManager
             if (eventDictionary.TryGetValue(eventName, out UnityEvent thisEvent))
             {
                 thisEvent.Invoke();
+            }
+
+            // 优先级订阅：按 priority 升序调用
+            if (_priorityListeners.TryGetValue(eventName, out var listeners))
+            {
+                for (int i = 0; i < listeners.Count; i++)
+                {
+                    var l = listeners[i];
+                    if (l.Callback != null) l.Callback.Invoke();
+                }
             }
         }
 
@@ -323,8 +337,19 @@ namespace WManager
 
         private static async void DelayedInvoke(UnityEvent thisEvent, int delay)
         {
-            await Task.Delay(delay);
-            thisEvent.Invoke();
+            // 用 UniTask 替换旧版 Task.Delay，能正确响应 PlayerLoop、时间缩放等。
+            // 保留 async void 是因为这是 fire-and-forget 的延迟触发；调用方已通过 EmitEvent 异步提交。
+            try
+            {
+                await UniTask.Delay(delay);
+            }
+            catch (System.OperationCanceledException)
+            {
+                return;
+            }
+
+            if (thisEvent != null)
+                thisEvent.Invoke();
         }
 
         /// <summary>
@@ -492,7 +517,7 @@ namespace WManager
         }
 
         /// <summary>
-        /// 返回具有给定名称的事件的整数数据(如果没有找到，则返回-1)。
+        /// 返回具有给定名称的事件的整数数据(如果没有找到，则返回0)。
         /// </summary>
         /// <param name="eventName"></param>
         /// <returns></returns>
@@ -500,11 +525,11 @@ namespace WManager
         {
             try
             {
-                if (storage.ContainsKey(eventName)) return (int)storage[eventName]; else return -1;
+                if (storage.ContainsKey(eventName)) return (int)storage[eventName]; else return 0;
             }
             catch (System.Exception)
             {
-                return -1;
+                return 0;
             }
         }
 
@@ -718,16 +743,7 @@ namespace WManager
 
             private object objectData;
 
-            /// <summary>
-            /// 返回原始对象。
-            /// </summary>
-            /// <param name="id"></param>
-            /// <returns></returns>
-            public object GetObject(string id)
-            {
-                return null;
-            }
-
+            
             /// <summary>
             /// 将对象转换为游戏对象。
             /// </summary>
@@ -866,6 +882,49 @@ namespace WManager
 
         #endregion
 
+    #region " 优先级订阅 "
+
+        internal struct PriorityListener
+        {
+            public int Priority;
+            public UnityAction Callback;
+        }
+
+        /// <summary>
+        /// 以指定优先级监听事件。priority 越小越先调用。
+        /// 与普通 StartListening 互不干扰；同一事件可同时存在普通订阅和优先级订阅。
+        /// </summary>
+        public static void StartListeningWithPriority(string eventName, UnityAction callback, int priority)
+        {
+            if (!_priorityListeners.TryGetValue(eventName, out var list))
+            {
+                list = new List<PriorityListener>();
+                _priorityListeners[eventName] = list;
+            }
+
+            list.Add(new PriorityListener { Priority = priority, Callback = callback });
+            // 保持升序：插入排序（list 通常很短）
+            list.Sort((a, b) => a.Priority.CompareTo(b.Priority));
+        }
+
+        /// <summary>
+        /// 移除通过 StartListeningWithPriority 注册的回调。
+        /// </summary>
+        public static void StopListeningWithPriority(string eventName, UnityAction callback)
+        {
+            if (!_priorityListeners.TryGetValue(eventName, out var list)) return;
+
+            for (int i = list.Count - 1; i >= 0; i--)
+            {
+                if (list[i].Callback == callback)
+                {
+                    list.RemoveAt(i);
+                    return;
+                }
+            }
+        }
+
+        #endregion
     }
 
     #region " 事件组 "

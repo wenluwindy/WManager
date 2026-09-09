@@ -4,129 +4,58 @@ using UnityEngine.Events;
 
 namespace WManager
 {
-    public sealed class EverySeconds : ITimer
+    /// <summary>
+    /// 周期性计时器：每隔指定秒数执行一次
+    /// </summary>
+    public sealed class EverySeconds : TimeBasedTimerBase<EverySeconds>
     {
-        private float beginTime;
+        private readonly float _duration;
+        private float _remainingTime;
+        private int _loops;
+        private readonly UnityAction _everyAction;
 
-        private readonly float duration;
+        public override float RemainingTime => _remainingTime;
 
-        private float pausedTime;
- 
-        private float remainingTime;
-
-        private readonly bool isIgnoreTimeScale;
-
-        private readonly MonoBehaviour executer;
-
-        private UnityAction onLaunch;
-        private UnityAction<float> onExecute;
-        private UnityAction onPause;
-        private UnityAction onResume;
-        private UnityAction onStop;
-        private readonly UnityAction everyAction;
-        private Func<bool> stopWhen;
-
-        private int loops;
-
-        public bool IsCompleted { get; private set; }
-
-        public bool IsPaused { get; private set; }
-
-        public EverySeconds(UnityAction everyAction, float duration = 1f, bool isIgnoreTimeScale = false, MonoBehaviour executer = null, int loops = -1)
+        public EverySeconds(UnityAction everyAction, float duration = 1f, bool isIgnoreTimeScale = false, int loops = -1)
+            : base(isIgnoreTimeScale)
         {
-            this.duration = duration;
-            this.everyAction = everyAction;
-            this.isIgnoreTimeScale = isIgnoreTimeScale;
-            this.executer = executer;
-            this.loops = loops;
+            _duration = duration;
+            _everyAction = everyAction;
+            _loops = loops;
+            _remainingTime = duration;
         }
 
-        public EverySeconds OnLaunch(UnityAction onLaunch)
+        protected override void OnBeforeLaunch()
         {
-            this.onLaunch = onLaunch;
-            return this;
-        }
-        public EverySeconds OnExecute(UnityAction<float> onExecute)
-        {
-            this.onExecute = onExecute;
-            return this;
-        }
-        public EverySeconds OnPause(UnityAction onPause)
-        {
-            this.onPause = onPause;
-            return this;
-        }
-        public EverySeconds OnResume(UnityAction onResume)
-        {
-            this.onResume = onResume;
-            return this;
-        }
-        public EverySeconds OnStop(UnityAction onStop)
-        {
-            this.onStop = onStop;
-            return this;
-        }
-        public EverySeconds StopWhen(Func<bool> predicate)
-        {
-            stopWhen = predicate;
-            return this;
+            _remainingTime = _duration;
+            _beginTime = GetCurrentTime();
         }
 
-        public void Launch()
+        public override bool Execute()
         {
-            beginTime = isIgnoreTimeScale ? Time.realtimeSinceStartup : Time.time;
-            onLaunch?.Invoke();
-            this.Begin(executer != null ? executer : Timer.Instance);
-        }
+            if (!_isRunning || IsCompleted) return true;
+            if (IsPaused) return false;
 
-        public void Pause()
-        {
-            IsPaused = true;
-            pausedTime = isIgnoreTimeScale ? Time.realtimeSinceStartup : Time.time;
-            onPause?.Invoke();
-        }
+            float currentTime = GetCurrentTime();
+            _remainingTime = _duration - (currentTime - _beginTime);
+            _remainingTime = Mathf.Clamp(_remainingTime, 0f, _duration);
+            _onExecute?.Invoke(_remainingTime);
 
-        public void Resume()
-        {
-            IsPaused = false;
-            beginTime += (isIgnoreTimeScale ? Time.realtimeSinceStartup : Time.time) - pausedTime;
-            onResume?.Invoke();
-        }
-
-        public void Stop()
-        {
-            IsCompleted = true;
-        }
-
-        public bool Execute()
-        {
-            if (!IsCompleted && !IsPaused)
+            if (_remainingTime <= 0f)
             {
-                remainingTime = duration - ((isIgnoreTimeScale ? Time.realtimeSinceStartup : Time.time) - beginTime);
-                remainingTime = Mathf.Clamp(remainingTime, 0f, duration);
-                onExecute?.Invoke(remainingTime);
-            }
-            if (remainingTime <= 0) 
-            {
-                everyAction?.Invoke();
-                if (--loops == 0)
+                _everyAction?.Invoke();
+                if (_loops > 0) _loops--;
+                if (_loops == 0)
                 {
-                    IsCompleted = true;
+                    Stop();
+                    return true;
                 }
-                else
-                {
-                    beginTime = isIgnoreTimeScale ? Time.realtimeSinceStartup : Time.time;
-                }
+                // 重置进入下一周期
+                _beginTime = currentTime;
+                _remainingTime = _duration;
             }
-            if (!IsCompleted && stopWhen != null && stopWhen.Invoke())
-            {
-                IsCompleted = true;
-            }
-            if (IsCompleted)
-            {
-                onStop?.Invoke();
-            }
-            return IsCompleted;
+
+            return CheckStopCondition();
         }
     }
 }

@@ -1,120 +1,85 @@
-using System;
 using UnityEngine;
-using Sirenix.OdinInspector;
 
 namespace WManager
 {
     /// <summary>
-    /// 全局音量控制器
+    /// 全局音量控制器：作为 UI（Slider）的桥梁，把 Inspector 或 Slider 的音量值同步给 VolumeController。
+    /// 改为订阅 VolumeController.VolumeChanged 事件而非每帧轮询，避免无效 CPU 开销。
     /// </summary>
     [AddComponentMenu("管理器/全局音量控制器")]
     public class GlobalVolumeController : MonoBehaviour
     {
-        [LabelText("总音量"), InfoBox("可绑定Slider进行调节,在方法中选择：GlobalVolume，GlobalEffVolume，GlobalMusicVolume，GlobalUIVolume")]
+        [Tooltip("总音量")]
         [Range(0, 1)]
         public float GVolume = 1;
-        [LabelText("总特效音量")]
+        [Tooltip("总特效音量")]
         [Range(0, 1)]
         public float GEffVolume = 1;
-        [LabelText("总音乐音量")]
+        [Tooltip("总音乐音量")]
         [Range(0, 1)]
         public float GMusicVolume = 1;
-        [LabelText("总UI效果音量")]
+        [Tooltip("总UI效果音量")]
         [Range(0, 1)]
         public float GUIVolume = 1;
-        float a = 1;
-        float b = 1;
-        float c = 1;
-        float d = 1;
-        /// <summary>
-        /// 判断当前在用什么调节音量
-        /// 使用检查器面板时传入的音量为-1
-        /// 使用Slider调节时传入的音量为Slider的值
-        /// </summary>
-        private void Update()
+
+        private void OnEnable()
         {
-            if (GVolume != a)
+            VolumeController.VolumeChanged += OnVolumeChanged;
+            // 启动时主动同步一次（覆盖 Play Mode 之前的状态）
+            ApplyAll();
+        }
+
+        private void OnDisable()
+        {
+            VolumeController.VolumeChanged -= OnVolumeChanged;
+        }
+
+#if UNITY_EDITOR
+        // Inspector 上直接修改字段时同步给 VolumeController
+        private void OnValidate()
+        {
+            if (!Application.isPlaying) return;
+            ApplyAll();
+        }
+#endif
+
+        private void OnVolumeChanged(SoundChannel channel)
+        {
+            switch (channel)
             {
-                GlobalVolume();
-                a = GVolume;
-            }
-            if (GEffVolume != b)
-            {
-                GlobalEffVolume();
-                b = GEffVolume;
-            }
-            if (GMusicVolume != c)
-            {
-                GlobalMusicVolume();
-                c = GMusicVolume;
-            }
-            if (GUIVolume != d)
-            {
-                GlobalUIVolume();
-                d = GEffVolume;
+                case SoundChannel.Global: GlobalVolume(GVolume); break;
+                case SoundChannel.Music: GlobalMusicVolume(GMusicVolume); break;
+                case SoundChannel.Eff: GlobalEffVolume(GEffVolume); break;
+                case SoundChannel.UISound: GlobalUIVolume(GUIVolume); break;
             }
         }
+
+        private void ApplyAll()
+        {
+            GlobalVolume(GVolume);
+            GlobalMusicVolume(GMusicVolume);
+            GlobalEffVolume(GEffVolume);
+            GlobalUIVolume(GUIVolume);
+        }
+
         /// <summary>
         /// 全局音量,绑定Slider
         /// </summary>
-        /// <param name="volume"></param>
-        public void GlobalVolume(float volume = -1)
-        {
-            if (volume == -1)
-            {
-                SoundManager.GlobalVolume = GVolume;
-            }
-            else
-            {
-                SoundManager.GlobalVolume = volume;
-            }
-        }
+        public void GlobalVolume(float volume) => SoundManager.GlobalVolume = volume;
+
         /// <summary>
         /// 全局效果音量，绑定Slider
         /// </summary>
-        /// <param name="volume"></param>
-        public void GlobalEffVolume(float volume = -1)
-        {
-            if (volume == -1)
-            {
-                SoundManager.GlobalEffsVolume = GEffVolume;
-            }
-            else
-            {
-                SoundManager.GlobalEffsVolume = volume;
-            }
-        }
+        public void GlobalEffVolume(float volume) => SoundManager.GlobalEffsVolume = volume;
+
         /// <summary>
         /// 全局音乐音量，绑定Slider
         /// </summary>
-        /// <param name="volume"></param>
-        public void GlobalMusicVolume(float volume = -1)
-        {
-            if (volume == -1)
-            {
-                SoundManager.GlobalMusicVolume = GMusicVolume;
-            }
-            else
-            {
-                SoundManager.GlobalMusicVolume = volume;
-            }
+        public void GlobalMusicVolume(float volume) => SoundManager.GlobalMusicVolume = volume;
 
-        }
         /// <summary>
         /// 全局UI特效音量，绑定Slider
         /// </summary>
-        /// <param name="volume"></param>
-        public void GlobalUIVolume(float volume = -1)
-        {
-            if (volume == -1)
-            {
-                SoundManager.GlobalUISoundsVolume = GEffVolume;
-            }
-            else
-            {
-                SoundManager.GlobalUISoundsVolume = volume;
-            }
-
-        }
+        public void GlobalUIVolume(float volume) => SoundManager.GlobalUISoundsVolume = volume;
     }
 }

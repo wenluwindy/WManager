@@ -4,125 +4,69 @@ using UnityEngine.Events;
 
 namespace WManager
 {
-    public sealed class EveryFrames : ITimer
+    /// <summary>
+    /// 周期性帧计时器：每隔指定帧数执行一次
+    /// </summary>
+    public sealed class EveryFrames : TimerBase<EveryFrames>
     {
-        private int beginFrame;
+        private int _beginFrame;
+        private readonly int _duration;
+        private int _pausedFrame;
+        private int _remainingFrame;
+        private int _loops;
+        private readonly UnityAction _everyAction;
 
-        private readonly int duration;
+        /// <summary>
+        /// 剩余时间（基于 Time.deltaTime 估算）
+        /// </summary>
+        public override float RemainingTime => _remainingFrame * Time.deltaTime;
 
-        private int pausedFrame;
-
-        private int remainingFrame;
-
-        private readonly MonoBehaviour executer;
-
-        private UnityAction onLaunch;
-        private UnityAction onExecute;
-        private UnityAction onPause;
-        private UnityAction onResume;
-        private UnityAction onStop;
-        private readonly UnityAction everyAction;
-        private Func<bool> stopWhen;
-
-        private int loops;
-
-        public bool IsCompleted { get; private set; }
-
-        public bool IsPaused { get; private set; }
-
-        public EveryFrames(UnityAction everyAction, int duration = 1, MonoBehaviour executer = null, int loops = -1)
+        public EveryFrames(UnityAction everyAction, int duration = 1, int loops = -1)
         {
-            this.duration = duration;
-            this.everyAction = everyAction;
-            this.executer = executer;
-            this.loops = loops;
+            _duration = duration;
+            _everyAction = everyAction;
+            _loops = loops;
+            _remainingFrame = duration;
         }
 
-        public EveryFrames OnLaunch(UnityAction onLaunch)
+        protected override void OnBeforeLaunch()
         {
-            this.onLaunch = onLaunch;
-            return this;
-        }
-        public EveryFrames OnExecute(UnityAction onExecute)
-        {
-            this.onExecute = onExecute;
-            return this;
-        }
-        public EveryFrames OnPause(UnityAction onPause)
-        {
-            this.onPause = onPause;
-            return this;
-        }
-        public EveryFrames OnResume(UnityAction onResume)
-        {
-            this.onResume = onResume;
-            return this;
-        }
-        public EveryFrames OnStop(UnityAction onStop)
-        {
-            this.onStop = onStop;
-            return this;
-        }
-        public EveryFrames StopWhen(Func<bool> predicate)
-        {
-            stopWhen = predicate;
-            return this;
+            _remainingFrame = _duration;
+            _beginFrame = Time.frameCount;
         }
 
-        public void Launch()
+        protected override void OnPauseTime()
         {
-            beginFrame = Time.frameCount;
-            onLaunch?.Invoke();
-            this.Begin(executer != null ? executer : Timer.Instance);
+            _pausedFrame = Time.frameCount;
         }
 
-        public void Pause()
+        protected override void OnResumeCompensate()
         {
-            IsPaused = true;
-            pausedFrame = Time.frameCount;
-            onPause?.Invoke();
+            _beginFrame += Time.frameCount - _pausedFrame;
         }
 
-        public void Resume()
+        public override bool Execute()
         {
-            IsPaused = false;
-            beginFrame += Time.frameCount - pausedFrame;
-            onResume?.Invoke();
-        }
+            if (!_isRunning || IsCompleted) return true;
+            if (IsPaused) return false;
 
-        public void Stop()
-        {
-            IsCompleted = true;
-        }
+            _remainingFrame = _duration - (Time.frameCount - _beginFrame);
+            _onExecute?.Invoke(RemainingTime); // 统一传 float：剩余秒数估算
 
-        public bool Execute()
-        {
-            if (!IsCompleted && !IsPaused)
+            if (_remainingFrame <= 0)
             {
-                remainingFrame = duration - (Time.frameCount - beginFrame);
-                onExecute?.Invoke();
-            }
-            if (remainingFrame <= 0)
-            {
-                everyAction?.Invoke();
-                if (--loops == 0)
+                _everyAction?.Invoke();
+                if (_loops > 0) _loops--;
+                if (_loops == 0)
                 {
-                    IsCompleted = true;
+                    Stop();
+                    return true;
                 }
-                else
-                {
-                    beginFrame = Time.frameCount;
-                }
+                _beginFrame = Time.frameCount;
+                _remainingFrame = _duration;
             }
-            if (!IsCompleted && stopWhen != null && stopWhen.Invoke())
-            {
-                IsCompleted = true;
-            }
-            if (IsCompleted)
-            {
-                onStop?.Invoke();
-            }
-            return IsCompleted;
+
+            return CheckStopCondition();
         }
     }
 }

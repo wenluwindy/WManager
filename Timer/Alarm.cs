@@ -1,75 +1,43 @@
-﻿using System;
-using UnityEngine;
+using System;
 using UnityEngine.Events;
 
 namespace WManager
 {
     /// <summary>
-    /// 闹钟
+    /// 闹钟：基于系统真实时间触发。
+    /// 语义不同于其他计时器：基于绝对时间（时分秒），不支持 StopWhen。
     /// </summary>
-    public sealed class Alarm : ITimer
+    public sealed class Alarm : TimerBase<Alarm>
     {
-        private readonly int hour = -1;
-        private readonly int minute = -1;
-        private readonly int second = -1;
+        private readonly int _hour;
+        private readonly int _minute;
+        private readonly int _second;
+        private readonly UnityAction _callback;
 
-        private readonly MonoBehaviour executer;
+        public override float RemainingTime
+            => (float)(DateTime.Now - new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, _hour, _minute, _second)).TotalSeconds;
 
-        private readonly UnityAction callback;
-        private UnityAction onStop;
-
-        public bool IsCompleted { get; private set; }
-
-        public bool IsPaused { get; private set; }
-
-        public Alarm(int hour, int minute, int second, UnityAction callback, MonoBehaviour executer = null)
+        public Alarm(int hour, int minute, int second, UnityAction callback)
         {
-            this.hour = hour;
-            this.minute = minute;
-            this.second = second;
-            this.callback = callback;
-            this.executer = executer;
+            _hour = hour;
+            _minute = minute;
+            _second = second;
+            _callback = callback;
         }
 
-        public Alarm OnStop(UnityAction onStop)
+        public override bool Execute()
         {
-            this.onStop = onStop;
-            return this;
-        }
+            if (!_isRunning || IsCompleted) return true;
+            if (IsPaused) return false;
 
-        public void Launch()
-        {
-            this.Begin(executer != null ? executer : Timer.Instance);
-        }
-
-        public void Pause()
-        {
-            IsPaused = true;
-        }
-
-        public void Resume()
-        {
-            IsPaused = false;
-        }
-
-        public void Stop()
-        {
-            IsCompleted = true;
-            onStop?.Invoke();
-        }
-
-        public bool Execute()
-        {
-            if (!IsCompleted && !IsPaused)
+            var now = DateTime.Now;
+            if (now.Hour == _hour && now.Minute == _minute && now.Second == _second)
             {
-                DateTime now = DateTime.Now;
-                IsCompleted = now.Hour == hour && now.Minute == minute && now.Second == second;
+                _callback?.Invoke();
+                Stop();
+                return true;
             }
-            if (IsCompleted)
-            {
-                callback?.Invoke();
-            }
-            return IsCompleted;
+            return false;
         }
     }
 }

@@ -1,17 +1,11 @@
-// using Newtonsoft.Json;
-// using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Globalization;
 using System.Linq;
-//using System.Net;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml;
-//using System.Net.NetworkInformation;
 using UnityEngine;
 
 namespace WManager
@@ -58,7 +52,7 @@ namespace WManager
         /// </summary>
         /// <param name="base64Str">base64字符串</param>
         /// <returns></returns>
-        public static byte[] ToBytes_FromBase64Str(this string base64Str)
+        public static byte[] ToBytesFromBase64Str(this string base64Str)
         {
             return Convert.FromBase64String(base64Str);
         }
@@ -321,7 +315,7 @@ namespace WManager
         /// </summary>
         /// <param name="str">数值</param>
         /// <returns></returns>
-        public static int ToInt0X(this string str)
+        public static int ToIntHex(this string str)
         {
             int num = Int32.Parse(str, NumberStyles.HexNumber);
             return num;
@@ -369,7 +363,7 @@ namespace WManager
             for (int i = 0; i < str.Length; i = i + 2)
             {
                 string numStr = $@"{str[i]}{str[i + 1]}";
-                resBytes.Add((byte)numStr.ToInt0X());
+                resBytes.Add((byte)numStr.ToIntHex());
             }
 
             return resBytes.ToArray();
@@ -411,77 +405,6 @@ namespace WManager
         // /// <summary>
         // /// 28.将XML字符串反序列化为对象
         // /// </summary>
-        // /// <typeparam name="T">对象类型</typeparam>
-        // /// <param name="xmlStr">XML字符串</param>
-        // /// <returns></returns>
-        // public static T XmlStrToObject<T>(this string xmlStr)
-        // {
-        //     XmlDocument doc = new XmlDocument();
-        //     doc.LoadXml(xmlStr);
-        //     string jsonJsonStr = JsonConvert.SerializeXmlNode(doc);
-
-        //     return JsonConvert.DeserializeObject<T>(jsonJsonStr);
-        // }
-
-        // /// <summary>
-        // /// 29.将XML字符串反序列化为对象
-        // /// </summary>
-        // /// <param name="xmlStr">XML字符串</param>
-        // /// <returns></returns>
-        // public static JObject XmlStrToJObject(this string xmlStr)
-        // {
-        //     XmlDocument doc = new XmlDocument();
-        //     doc.LoadXml(xmlStr);
-        //     string jsonJsonStr = JsonConvert.SerializeXmlNode(doc);
-
-        //     return JsonConvert.DeserializeObject<JObject>(jsonJsonStr);
-        // }
-
-        // /// <summary>
-        // /// 30.将Json字符串转为List'T'
-        // /// </summary>
-        // /// <typeparam name="T">对象类型</typeparam>
-        // /// <param name="jsonStr"></param>
-        // /// <returns></returns>
-        // public static List<T> ToList<T>(this string jsonStr)
-        // {
-        //     return string.IsNullOrEmpty(jsonStr) ? null : JsonConvert.DeserializeObject<List<T>>(jsonStr);
-        // }
-
-        // /// <summary>
-        // /// 31.将Json字符串转为DataTable
-        // /// </summary>
-        // /// <param name="jsonStr">Json字符串</param>
-        // /// <returns></returns>
-        // public static DataTable ToDataTable(this string jsonStr)
-        // {
-        //     return jsonStr == null ? null : JsonConvert.DeserializeObject<DataTable>(jsonStr);
-        // }
-
-        // /// <summary>
-        // /// 32.将Json字符串转为JObject
-        // /// </summary>
-        // /// <param name="jsonStr">Json字符串</param>
-        // /// <returns></returns>
-        // public static JObject ToJObject(this string jsonStr)
-        // {
-        //     return jsonStr == null ? JObject.Parse("{}") : JObject.Parse(jsonStr.Replace("&nbsp;", ""));
-        // }
-
-        // /// <summary>
-        // /// 33.将Json字符串转为JArray
-        // /// </summary>
-        // /// <param name="jsonStr">Json字符串</param>
-        // /// <returns></returns>
-        // public static JArray ToJArray(this string jsonStr)
-        // {
-        //     return jsonStr == null ? JArray.Parse("[]") : JArray.Parse(jsonStr.Replace("&nbsp;", ""));
-        // }
-
-        /// <summary>
-        /// 34.json数据转实体类,仅仅应用于单个实体类，速度非常快
-        /// </summary>
-        /// <typeparam name="T">泛型参数</typeparam>
         /// <param name="json">json字符串</param>
         /// <returns></returns>
         public static T ToEntity<T>(this string json)
@@ -532,29 +455,6 @@ namespace WManager
         }
 
         /// <summary>
-        /// 37.转为网络终结点IPEndPoint
-        /// </summary>=
-        /// <param name="str">字符串</param>
-        /// <returns></returns>
-        // public static IPEndPoint ToIPEndPoint(this string str)
-        // {
-        //     IPEndPoint iPEndPoint = null;
-        //     try
-        //     {
-        //         string[] strArray = str.Split(':').ToArray();
-        //         string addr = strArray[0];
-        //         int port = Convert.ToInt32(strArray[1]);
-        //         iPEndPoint = new IPEndPoint(IPAddress.Parse(addr), port);
-        //     }
-        //     catch
-        //     {
-        //         iPEndPoint = null;
-        //     }
-
-        //     return iPEndPoint;
-        // }
-
-        /// <summary>
         /// 38.将枚举类型的文本转为枚举类型
         /// </summary>
         /// <typeparam name="TEnum">枚举类型</typeparam>
@@ -585,19 +485,120 @@ namespace WManager
                 return false;
         }
         /// <summary>
+        /// AES加密
+        /// </summary>
+        /// <remarks>
+        /// 密钥可以是任意长度（不限 16/24/32 字节），内部会用 SHA256 派生为 32 字节（AES-256），
+        /// 避免因密钥长度非法抛出 <see cref="CryptographicException"/>。
+        /// 使用 ECB 模式 + PKCS7 填充。
+        /// </remarks>
+        /// <param name="text">要加密的文本</param>
+        /// <param name="EncryptionKey">秘钥（任意长度）</param>
+        /// <returns>Base64 字符串；输入为 null 时返回 null，加密失败时返回空串</returns>
+        public static string AESEncrypt(this string text, string EncryptionKey)
+        {
+            if (text == null) return null;
+            if (string.IsNullOrEmpty(EncryptionKey))
+                throw new ArgumentException("EncryptionKey 不能为空", nameof(EncryptionKey));
+
+            try
+            {
+                // 用 SHA256 把任意长度的密钥归一化成 32 字节（AES-256），绕开 Key 长度限制
+                byte[] key;
+                using (var sha = SHA256.Create())
+                {
+                    key = sha.ComputeHash(Encoding.UTF8.GetBytes(EncryptionKey));
+                }
+
+                using (var aes = Aes.Create())
+                {
+                    aes.Key = key;
+                    aes.Mode = cipherMode;
+                    aes.Padding = paddingMode;
+
+                    using (var encryptor = aes.CreateEncryptor())
+                    {
+                        byte[] inputBuffer = Encoding.UTF8.GetBytes(text);
+                        byte[] outputBuffer = encryptor.TransformFinalBlock(inputBuffer, 0, inputBuffer.Length);
+                        return Convert.ToBase64String(outputBuffer);
+                    }
+                }
+            }
+            catch (CryptographicException)
+            {
+                // 加密过程出错，返回空串而不是抛出，避免调用链整体崩溃
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// AES解密
+        /// </summary>
+        /// <remarks>
+        /// 密钥可以是任意长度（不限 16/24/32 字节），内部会用 SHA256 派生为 32 字节（AES-256），
+        /// 与 <see cref="AESEncrypt"/> 配对使用。
+        /// </remarks>
+        /// <param name="cipherText">要解密的 Base64 文本</param>
+        /// <param name="EncryptionKey">秘钥（任意长度）</param>
+        /// <returns>解密后的明文；失败时返回 "错误"，输入为 null 时返回 null</returns>
+        public static string AESDecrypt(this string cipherText, string EncryptionKey)
+        {
+            if (cipherText == null) return null;
+            if (string.IsNullOrEmpty(cipherText) || string.IsNullOrEmpty(EncryptionKey))
+                return string.Empty;
+
+            try
+            {
+                // 用 SHA256 把任意长度的密钥归一化成 32 字节（AES-256），与加密端保持一致
+                byte[] key;
+                using (var sha = SHA256.Create())
+                {
+                    key = sha.ComputeHash(Encoding.UTF8.GetBytes(EncryptionKey));
+                }
+
+                using (var aes = Aes.Create())
+                {
+                    aes.Key = key;
+                    aes.Mode = cipherMode;
+                    aes.Padding = paddingMode;
+
+                    using (var decryptor = aes.CreateDecryptor())
+                    {
+                        byte[] inputBuffer = Convert.FromBase64String(cipherText);
+                        byte[] outputBuffer = decryptor.TransformFinalBlock(inputBuffer, 0, inputBuffer.Length);
+                        return Encoding.UTF8.GetString(outputBuffer);
+                    }
+                }
+            }
+            catch
+            {
+                return "错误";
+            }
+        }
+
+        // AES 使用的模式/填充，集中在这里方便以后切换成 CBC 等更安全的模式
+        private const CipherMode cipherMode = CipherMode.ECB;
+        private const PaddingMode paddingMode = PaddingMode.PKCS7;
+
+        /// <summary>
         /// AES加密(8个中文字符或16个英文数字)
         /// </summary>
+        /// <remarks>
+        /// ⚠️ 旧版 API：直接使用 UTF-8 字节作为密钥，仅支持 16 / 24 / 32 字节，否则会抛 <see cref="CryptographicException"/>。
+        /// 新代码请使用 <see cref="AESEncrypt(string, string)"/>（任意长度密钥，内部 SHA256 派生）。
+        /// 保留本方法仅为兼容已经存量的密文。
+        /// </remarks>
         /// <param name="text">要加密的文本</param>
-        /// <param name="EncryptionKey">秘钥</param>
-        /// <returns></returns>
-        public static string AESEncrypt(this string text, string EncryptionKey)
+        /// <param name="EncryptionKey">秘钥（必须 16 / 24 / 32 字节）</param>
+        /// <returns>Base64 字符串</returns>
+        public static string AESEncryptLegacy(this string text, string EncryptionKey)
         {
             byte[] key = Encoding.UTF8.GetBytes(EncryptionKey);
             using (var aes = Aes.Create())
             {
                 aes.Key = key;
-                aes.Mode = CipherMode.ECB;
-                aes.Padding = PaddingMode.PKCS7;
+                aes.Mode = cipherMode;
+                aes.Padding = paddingMode;
 
                 using (var encryptor = aes.CreateEncryptor())
                 {
@@ -607,13 +608,11 @@ namespace WManager
                 }
             }
         }
+
         /// <summary>
-        /// AES解密
+        /// AES解密（与 <see cref="AESEncryptLegacy"/> 配对）
         /// </summary>
-        /// <param name="cipherText">要解密的文本</param>
-        /// <param name="EncryptionKey">秘钥</param>
-        /// <returns></returns>
-        public static string AESDecrypt(this string cipherText, string EncryptionKey)
+        public static string AESDecryptLegacy(this string cipherText, string EncryptionKey)
         {
             byte[] key = Encoding.UTF8.GetBytes(EncryptionKey);
             try
@@ -621,8 +620,8 @@ namespace WManager
                 using (var aes = Aes.Create())
                 {
                     aes.Key = key;
-                    aes.Mode = CipherMode.ECB;
-                    aes.Padding = PaddingMode.PKCS7;
+                    aes.Mode = cipherMode;
+                    aes.Padding = paddingMode;
 
                     using (var decryptor = aes.CreateDecryptor())
                     {
@@ -669,9 +668,10 @@ namespace WManager
         // }
 
         /// <summary>
-        /// 获取MAC地址，在webgl中可使用
+        /// 获取持久化唯一标识符。首次调用时生成 GUID 并写入 PlayerPrefs，之后返回同一值。
+        /// （注意：实际是 GUID，不是 MAC 地址。WebGL 等没有真实 MAC 的平台请使用此方法。）
         /// </summary>
-        public static string GetMacAddress()
+        public static string GetPersistentGuid()
         {
             string uniqueIdentifier = PlayerPrefs.GetString("UniqueIdentifier");
 

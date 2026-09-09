@@ -18,7 +18,7 @@ namespace WManager
         {
             switch (timeUnit)
             {
-                case TimeUnit.Millsecond: return v * .001f;
+                case TimeUnit.Millisecond: return v * .001f;
                 case TimeUnit.Minute: return v * 60f;
                 case TimeUnit.Hour: return v * 3600f;
                 case TimeUnit.Day: return v * 3600f * 24f;
@@ -67,12 +67,12 @@ namespace WManager
         /// <returns></returns>
         public static string ToHMSFTimeFormat(float seconds)
         {
-            int millseconds = (int)(seconds * 1000);
-            int hour = millseconds / 3600000;
-            int minute = millseconds % 3600000 / 60000;
-            int second = millseconds % 3600000 % 60000 / 1000;
-            millseconds = millseconds % 3600000 % 60000 % 1000;
-            return string.Format("{0:D2}:{1:D2}:{2:D2}:{3:D3}", hour, minute, second, millseconds);
+            int milliseconds = (int)(seconds * 1000);
+            int hour = milliseconds / 3600000;
+            int minute = milliseconds % 3600000 / 60000;
+            int second = milliseconds % 3600000 % 60000 / 1000;
+            milliseconds = milliseconds % 3600000 % 60000 % 1000;
+            return string.Format("{0:D2}:{1:D2}:{2:D2}:{3:D3}", hour, minute, second, milliseconds);
         }
         /// <summary>
         /// 将秒数转化为mm:ss:fff格式字符串
@@ -81,11 +81,37 @@ namespace WManager
         /// <returns></returns>
         public static string ToMSFTimeFormat(float seconds)
         {
-            int millseconds = (int)(seconds * 1000);
-            int minute = millseconds % 3600000 / 60000;
-            int second = millseconds % 3600000 % 60000 / 1000;
-            millseconds = millseconds % 3600000 % 60000 % 1000;
-            return string.Format("{0:D2}:{1:D2}:{2:D3}", minute, second, millseconds);
+            int milliseconds = (int)(seconds * 1000);
+            int minute = milliseconds % 3600000 / 60000;
+            int second = milliseconds % 3600000 % 60000 / 1000;
+            milliseconds = milliseconds % 3600000 % 60000 % 1000;
+            return string.Format("{0:D2}:{1:D2}:{2:D3}", minute, second, milliseconds);
         }
+    }
+    /// <summary>
+    /// 时间单位
+    /// </summary>
+    public enum TimeUnit 
+    {
+        /// <summary>
+        /// 毫秒
+        /// </summary>
+        Millisecond,
+        /// <summary>
+        /// 秒
+        /// </summary>
+        Second,
+        /// <summary>
+        /// 分钟
+        /// </summary>
+        Minute,
+        /// <summary>
+        /// 小时
+        /// </summary>
+        Hour,
+        /// <summary>
+        /// 天
+        /// </summary>
+        Day,
     }
 }

@@ -1,0 +1,17 @@
+root = true
+
+[*.cs]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# 命名规范（注释提醒）
+# - 字段（私有/保护）：_camelCase
+# - 公开属性/方法：PascalCase
+# - 接口：IPascalCase
+# - 异步方法后缀：Async
+# - 静态工厂方法：CreateXxx
+# - 命名空间：WManager

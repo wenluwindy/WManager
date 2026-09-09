@@ -1,117 +1,35 @@
-using System;
 using UnityEngine;
-using UnityEngine.Events;
 
 namespace WManager
 {
     /// <summary>
-    /// 时钟/计时器
+    /// 正向计时器：记录已流逝时间
     /// </summary>
-    public sealed class Clock : ITimer
+    public sealed class Clock : TimeBasedTimerBase<Clock>
     {
-        private float beginTime;
-
-        private float pausedTime;
-
-        private readonly bool isIgnoreTimeScale;
-
-        private readonly MonoBehaviour executer;
-
-        private UnityAction onLaunch;
-        private UnityAction<float> onExecute;
-        private UnityAction onPause;
-        private UnityAction onResume;
-        private UnityAction onStop;
-        private Func<bool> stopWhen;
+        public float ElapsedTime { get; private set; }
 
         /// <summary>
-        /// 已经计时
+        /// 正向计时器无"剩余时间"概念
         /// </summary>
-        public float ElapsedTime { get; private set; }
-       
-        public bool IsCompleted { get; private set; }
+        public override float RemainingTime => -1f;
 
-        public bool IsPaused { get; private set; }
+        public Clock(bool isIgnoreTimeScale = false) : base(isIgnoreTimeScale) { }
 
-        public Clock(bool isIgnoreTimeScale, MonoBehaviour executer)
+        protected override void OnBeforeLaunch()
         {
-            this.isIgnoreTimeScale = isIgnoreTimeScale;
-            this.executer = executer;
+            ElapsedTime = 0f;
+            _beginTime = GetCurrentTime();
         }
 
-        public Clock OnLaunch(UnityAction onLaunch)
+        public override bool Execute()
         {
-            this.onLaunch = onLaunch;
-            return this;
-        }
-        public Clock OnExecute(UnityAction<float> onExecute)
-        {
-            this.onExecute = onExecute;
-            return this;
-        }
-        public Clock OnPause(UnityAction onPause)
-        {
-            this.onPause = onPause;
-            return this;
-        }
-        public Clock OnResume(UnityAction onResume)
-        {
-            this.onResume = onResume;
-            return this;
-        }
-        public Clock OnStop(UnityAction onStop)
-        {
-            this.onStop = onStop;
-            return this;
-        }
-        public Clock StopWhen(Func<bool> predicate)
-        {
-            stopWhen = predicate;
-            return this;
-        }
+            if (!_isRunning || IsCompleted) return true;
+            if (IsPaused) return false;
 
-        public void Launch()
-        {
-            beginTime = isIgnoreTimeScale ? Time.realtimeSinceStartup : Time.time;
-            onLaunch?.Invoke();
-            this.Begin(executer != null ? executer : Timer.Instance);
-        }
-
-        public void Pause()
-        {
-            IsPaused = true;
-            pausedTime = isIgnoreTimeScale ? Time.realtimeSinceStartup : Time.time;
-            onPause?.Invoke();
-        }
-
-        public void Resume()
-        {
-            IsPaused = false;
-            beginTime += (isIgnoreTimeScale ? Time.realtimeSinceStartup : Time.time) - pausedTime;
-            onResume?.Invoke();
-        }
-
-        public void Stop()
-        {
-            IsCompleted = true;
-        }
-
-        public bool Execute()
-        {
-            if (!IsCompleted && !IsPaused)
-            {
-                ElapsedTime = (isIgnoreTimeScale ? Time.realtimeSinceStartup : Time.time) - beginTime;
-                onExecute?.Invoke(ElapsedTime);
-            }
-            if (!IsCompleted && stopWhen != null && stopWhen.Invoke())
-            {
-                IsCompleted = true;
-            }
-            if (IsCompleted)
-            {
-                onStop?.Invoke();
-            }
-            return IsCompleted;
+            ElapsedTime = GetCurrentTime() - _beginTime;
+            _onExecute?.Invoke(ElapsedTime);
+            return CheckStopCondition();
         }
     }
 }

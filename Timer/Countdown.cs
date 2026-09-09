@@ -1,123 +1,52 @@
 using System;
 using UnityEngine;
-using UnityEngine.Events;
 
 namespace WManager
 {
     /// <summary>
-    /// 倒计时/定时器
+    /// 倒计时计时器
     /// </summary>
-    public sealed class Countdown : ITimer
+    public sealed class Countdown : TimeBasedTimerBase<Countdown>
     {
-        private float beginTime;
+        private readonly float _duration;
+        private float _remainingTime;
 
-        private readonly float duration;
-
-        private float pausedTime;
-
-        private readonly bool isIgnoreTimeScale;
-
-        private readonly MonoBehaviour executer;
-
-        private UnityAction onLaunch;
-        private UnityAction<float> onExecute;
-        private UnityAction onPause;
-        private UnityAction onResume;
-        private UnityAction onStop;
-        private Func<bool> stopWhen;
-
-        /// <summary>
-        /// 剩余计时时长
-        /// </summary>
-        public float RemainingTime { get; private set; }
-
-        public bool IsCompleted { get; private set; }
-
-        public bool IsPaused { get; private set; }
-
-        public Countdown(float duration, bool isIgnoreTimeScale = false, MonoBehaviour executer = null)
+        public override float RemainingTime
         {
-            this.duration = duration;
-            this.isIgnoreTimeScale = isIgnoreTimeScale;
-            this.executer = executer;
+            get => _remainingTime;
         }
 
-        public Countdown OnLaunch(UnityAction onLaunch)
+        public Countdown(float duration, bool isIgnoreTimeScale = false) : base(isIgnoreTimeScale)
         {
-            this.onLaunch = onLaunch;
-            return this;
-        }
-        public Countdown OnExecute(UnityAction<float> onExecute)
-        {
-            this.onExecute = onExecute;
-            return this;
-        }
-        public Countdown OnPause(UnityAction onPause)
-        {
-            this.onPause = onPause;
-            return this;
-        }
-        public Countdown OnResume(UnityAction onResume)
-        {
-            this.onResume = onResume;
-            return this;
-        }
-        public Countdown OnStop(UnityAction onStop)
-        {
-            this.onStop = onStop;
-            return this;
-        }
-        public Countdown StopWhen(Func<bool> predicate)
-        {
-            stopWhen = predicate;
-            return this;
+            if (duration < 0f) throw new ArgumentOutOfRangeException(nameof(duration), "时长必须为非负!");
+            _duration = duration;
+            _remainingTime = duration;
         }
 
-        public void Launch()
+        protected override void OnBeforeLaunch()
         {
-            IsCompleted = false;
-            beginTime = isIgnoreTimeScale ? Time.realtimeSinceStartup : Time.time;
-            onLaunch?.Invoke();
-            this.Begin(executer != null ? executer : Timer.Instance);
+            _remainingTime = _duration;
+            _beginTime = GetCurrentTime();
         }
 
-        public void Pause()
+        public override bool Execute()
         {
-            IsPaused = true;
-            pausedTime = isIgnoreTimeScale ? Time.realtimeSinceStartup : Time.time;
-            onPause?.Invoke();
-        }
+            if (!_isRunning || IsCompleted) return true;
+            if (IsPaused) return false;
 
-        public void Resume()
-        {
-            IsPaused = false;
-            beginTime += (isIgnoreTimeScale ? Time.realtimeSinceStartup : Time.time) - pausedTime;
-            onResume?.Invoke();
-        }
+            float currentTime = GetCurrentTime();
+            _remainingTime = _duration - (currentTime - _beginTime);
+            _remainingTime = Mathf.Clamp(_remainingTime, 0f, _duration);
 
-        public void Stop()
-        {
-            IsCompleted = true;
-        }
+            _onExecute?.Invoke(_remainingTime);
 
-        public bool Execute()
-        {
-            if (!IsCompleted && !IsPaused)
+            if (_remainingTime <= 0f)
             {
-                RemainingTime = duration - ((isIgnoreTimeScale ? Time.realtimeSinceStartup : Time.time) - beginTime);
-                RemainingTime = Mathf.Clamp(RemainingTime, 0f, duration);
-                onExecute?.Invoke(RemainingTime);
+                Stop();
+                return true;
             }
-            IsCompleted = RemainingTime <= 0;
-            if (!IsCompleted && stopWhen != null && stopWhen.Invoke())
-            {
-                IsCompleted = true;
-            }
-            if (IsCompleted)
-            {
-                onStop?.Invoke();
-            }
-            return IsCompleted;
+
+            return CheckStopCondition();
         }
     }
 }

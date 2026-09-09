@@ -371,6 +371,16 @@ namespace WManager
         }
 
         /// <summary>
+        /// 当音频完成播放时调用。
+        /// </summary>
+        /// <param name="audioID"></param>
+        public delegate void AudioFinishedCallback(int audioID);
+        /// <summary>
+        /// 当音频完成播放时调用。
+        /// </summary>
+        public AudioFinishedCallback OnAudioFinished { get; set; }
+
+        /// <summary>
         /// 使用适当的值创建和初始化音频源组件
         /// </summary>
         private void CreateAudiosource()
@@ -416,7 +426,8 @@ namespace WManager
                     return;
                 }
 
-                Pooled = true;
+                // 已从池中恢复，标记为脱离池状态
+                Pooled = false;
             }
 
             // 如果音频源不存在，则重新创建
@@ -443,6 +454,16 @@ namespace WManager
             targetVolume = 0f;
 
             Stopping = true;
+
+            // 如果是立即停止，直接触发回调
+            if (FadeOutSeconds <= 0)
+            {
+                if (OnAudioFinished != null)
+                {
+                    OnAudioFinished(AudioID);
+                    OnAudioFinished = null;
+                }
+            }
         }
 
         /// <summary>
@@ -583,6 +604,13 @@ namespace WManager
                 Stopping = false;
                 IsPlaying = false;
                 Paused = false;
+
+                // 添加回调触发
+                if (OnAudioFinished != null)
+                {
+                    OnAudioFinished(AudioID);
+                    OnAudioFinished = null; // 执行后清除回调
+                }
             }
 
             // 更新播放状态

@@ -8,8 +8,9 @@ namespace WManager
     /// <summary>
     /// 声音管理：负责播放和管理音频
     ///  Music Eff UISound
+    /// 继承 SingletonBehaviour，统一单例生命周期。
     /// </summary>
-    public class SoundManager : MonoBehaviour
+    public class SoundManager : SingletonBehaviour<SoundManager>
     {
         /// <summary>
         /// 声音管理器附加到的游戏对象
@@ -34,24 +35,38 @@ namespace WManager
         /// <summary>
         /// 全局音量
         /// </summary>
-        public static float GlobalVolume { get; set; }
+        public static float GlobalVolume
+        {
+            get => VolumeController.Global;
+            set => VolumeController.Global = value;
+        }
 
         /// <summary>
         /// 全局音乐音量
         /// </summary>
-        public static float GlobalMusicVolume { get; set; }
+        public static float GlobalMusicVolume
+        {
+            get => VolumeController.Music;
+            set => VolumeController.Music = value;
+        }
 
         /// <summary>
         /// 全局声音音量
         /// </summary>
-        public static float GlobalEffsVolume { get; set; }
+        public static float GlobalEffsVolume
+        {
+            get => VolumeController.Eff;
+            set => VolumeController.Eff = value;
+        }
 
         /// <summary>
         /// 全局UI声音音量
         /// </summary>
-        public static float GlobalUISoundsVolume { get; set; }
-
-        private static SoundManager instance = null;
+        public static float GlobalUISoundsVolume
+        {
+            get => VolumeController.UISound;
+            set => VolumeController.UISound = value;
+        }
 
         private static Dictionary<int, Audio> musicAudio;
         private static Dictionary<int, Audio> effsAudio;
@@ -60,26 +75,10 @@ namespace WManager
 
         private static bool initialized = false;
 
-        private static SoundManager Instance
+        protected override void Awake()
         {
-            get
-            {
-                if (instance == null)
-                {
-                    instance = (SoundManager)FindObjectOfType(typeof(SoundManager));
-                    if (instance == null)
-                    {
-                        // 创建gameObject并添加组件
-                        instance = (new GameObject("SoundManager")).AddComponent<SoundManager>();
-                    }
-                }
-                return instance;
-            }
-        }
-
-        static SoundManager()
-        {
-            Instance.Init();
+            base.Awake();
+            Init();
         }
 
         /// <summary>
@@ -94,17 +93,13 @@ namespace WManager
                 UISoundsAudio = new Dictionary<int, Audio>();
                 audioPool = new Dictionary<int, Audio>();
 
-                GlobalVolume = 1;
-                GlobalMusicVolume = 1;
-                GlobalEffsVolume = 1;
-                GlobalUISoundsVolume = 1;
+                VolumeController.ResetToDefault();
 
                 IgnoreDuplicateMusic = false;
                 IgnoreDuplicateEffs = false;
                 IgnoreDuplicateUISounds = false;
 
                 initialized = true;
-                DontDestroyOnLoad(this);
             }
         }
 
@@ -900,6 +895,38 @@ namespace WManager
             {
                 Audio audio = audioDict[key];
                 audio.Resume();
+            }
+        }
+
+        #endregion
+
+        #region Callback Functions
+
+        /// <summary>
+        /// 设置音频播放完成回调
+        /// </summary>
+        /// <param name="audioID">音频ID</param>
+        /// <param name="callback">回调方法</param>
+        public static void SetAudioFinishedCallback(int audioID, Audio.AudioFinishedCallback callback)
+        {
+            Audio audio = GetAudio(audioID);
+            if (audio != null)
+            {
+                audio.OnAudioFinished = callback;
+            }
+        }
+
+        /// <summary>
+        /// 设置音频播放完成回调
+        /// </summary>
+        /// <param name="clip">音频剪辑</param>
+        /// <param name="callback">回调方法</param>
+        public static void SetAudioFinishedCallback(AudioClip clip, Audio.AudioFinishedCallback callback)
+        {
+            Audio audio = GetAudio(clip);
+            if (audio != null)
+            {
+                audio.OnAudioFinished = callback;
             }
         }
 

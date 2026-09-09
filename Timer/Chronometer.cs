@@ -1,154 +1,61 @@
 using System;
-using UnityEngine;
-using UnityEngine.Events;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using UnityEngine.Events;
 
 namespace WManager
 {
     /// <summary>
-    /// 秒表
+    /// 秒表计时器：支持中途打点记录
     /// </summary>
-    public sealed class Chronometer : ITimer
+    public sealed class Chronometer : TimeBasedTimerBase<Chronometer>
     {
         public sealed class Record
         {
-            public object context;
-
-            public float time;
-
-            public Record(object context, float time)
-            {
-                this.context = context;
-                this.time = time;
-            }
+            public readonly object Context;
+            public readonly float Time;
+            public Record(object context, float time) { Context = context; Time = time; }
         }
 
-        private float beginTime;
-
-        private float pausedTime;
-
-        private readonly bool isIgnoreTimeScale;
-
-        private readonly MonoBehaviour executer;
-
-        private UnityAction onLaunch;
-        private UnityAction<float> onExecute;
-        private UnityAction onPause;
-        private UnityAction onResume;
-        private UnityAction onStop;
-        private Func<bool> stopWhen;
-        private Func<bool> shotWhen;
-
-        private readonly List<Record> records;
+        private Func<bool> _shotWhen;
+        private readonly List<Record> _records;
 
         public float ElapsedTime { get; private set; }
+        public override float RemainingTime => -1f; // 秒表无剩余时间概念
+        public ReadOnlyCollection<Record> Records => new ReadOnlyCollection<Record>(_records);
 
-        public bool IsCompleted { get; private set; }
-
-        public bool IsPaused { get; private set; }
-
-        public ReadOnlyCollection<Record> Records
+        public Chronometer(bool isIgnoreTimeScale = false) : base(isIgnoreTimeScale)
         {
-            get
-            {
-                return new ReadOnlyCollection<Record>(records);
-            }
+            _records = new List<Record>();
         }
 
-        public Chronometer(bool isIgnoreTimeScale = false, MonoBehaviour executer = null)
-        {
-            this.isIgnoreTimeScale = isIgnoreTimeScale;
-            this.executer = executer;
-            records = new List<Record>();
-        }
+        public Chronometer ShotWhen(Func<bool> predicate) { _shotWhen = predicate; return this; }
 
-        public Chronometer OnLaunch(UnityAction onLaunch)
-        {
-            this.onLaunch = onLaunch;
-            return this;
-        }
-        public Chronometer OnExecute(UnityAction<float> onExecute)
-        {
-            this.onExecute = onExecute;
-            return this;
-        }
-        public Chronometer OnPause(UnityAction onPause)
-        {
-            this.onPause = onPause;
-            return this;
-        }
-        public Chronometer OnResume(UnityAction onResume)
-        {
-            this.onResume = onResume;
-            return this;
-        }
-        public Chronometer OnStop(UnityAction onStop)
-        {
-            this.onStop = onStop;
-            return this;
-        }
-        public Chronometer StopWhen(Func<bool> predicate)
-        {
-            stopWhen = predicate;
-            return this;
-        }
-        public Chronometer ShotWhen(Func<bool> predicate)
-        {
-            shotWhen = predicate;
-            return this;
-        }
+        /// <summary>
+        /// 手动打点记录当前耗时
+        /// </summary>
         public void Shot(object context = null)
         {
-            records.Add(new Record(context, ElapsedTime));
+            _records.Add(new Record(context, ElapsedTime));
         }
 
-        public void Launch()
+        protected override void OnBeforeLaunch()
         {
-            beginTime = isIgnoreTimeScale ? Time.realtimeSinceStartup : Time.time;
-            onLaunch?.Invoke();
-            this.Begin(executer != null ? executer : Timer.Instance);
+            ElapsedTime = 0f;
+            _beginTime = GetCurrentTime();
+            _records.Clear();
         }
 
-        public void Pause()
+        public override bool Execute()
         {
-            IsPaused = true;
-            pausedTime = isIgnoreTimeScale ? Time.realtimeSinceStartup : Time.time;
-            onPause?.Invoke();
-        }
+            if (!_isRunning || IsCompleted) return true;
+            if (IsPaused) return false;
 
-        public void Resume()
-        {
-            IsPaused = false;
-            beginTime += (isIgnoreTimeScale ? Time.realtimeSinceStartup : Time.time) - pausedTime;
-            onResume?.Invoke();
-        }
+            ElapsedTime = GetCurrentTime() - _beginTime;
+            _onExecute?.Invoke(ElapsedTime);
 
-        public void Stop()
-        {
-            IsCompleted = true;
-        }
-
-        public bool Execute()
-        {
-            if (!IsCompleted && !IsPaused)
-            {
-                ElapsedTime = (isIgnoreTimeScale ? Time.realtimeSinceStartup : Time.time) - beginTime;
-                onExecute?.Invoke(ElapsedTime);
-                if (shotWhen != null && shotWhen.Invoke())
-                {
-                    Shot();
-                }
-            }
-            if (!IsCompleted && stopWhen != null && stopWhen.Invoke())
-            {
-                IsCompleted = true;
-            }
-            if (IsCompleted)
-            {
-                onStop?.Invoke();
-            }
-            return IsCompleted;
+            if (_shotWhen != null && _shotWhen.Invoke()) Shot();
+            return CheckStopCondition();
         }
     }
 }

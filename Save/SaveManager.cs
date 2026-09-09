@@ -1,55 +1,26 @@
 using System.IO;
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
-namespace WManager.Save
+namespace WManager
 {
-    /// <summary> 存档系统 </summary>
-    public class SaveManager : MonoBehaviour
+    /// <summary> 存档系统（纯静态工具类，不需要 MonoBehaviour） </summary>
+    public static class SaveManager
     {
-        private static SaveManager instance;
-        public static SaveManager Instance
-        {
-            get
-            {
-                if (instance == null)
-                {
-                    instance = (SaveManager)FindObjectOfType(typeof(SaveManager));
-                    if (instance == null)
-                    {
-                        // 创建gameObject并添加组件
-                        instance = (new GameObject("SaveManager")).AddComponent<SaveManager>();
-                    }
-                }
-                return instance;
-            }
-        }
-        private static bool initialized = false;
-
-        static SaveManager()
-        {
-            Instance.Init();
-        }
-        private void Init()
-        {
-            if (!initialized)
-            {
-                initialized = true;
-                DontDestroyOnLoad(this);
-            }
-        }
 
         /// <summary> 检查特定文件是否已经被保存</summary>
         /// <param name="path">文件路径，如“Albert”。</param>
         public static bool Exists(string path)
         {
-            string dataPath = Application.persistentDataPath + path + ".save";
+            string dataPath = Path.Combine(Application.persistentDataPath, path + ".save");
             return File.Exists(dataPath);
         }
         /// <summary> 检查特定键是否已经被保存 </summary>
         /// <param name="key">保存的键，如“Albert”。</param>
-        public static bool ExistsWeb(string key)
+        public static bool ExistsInPrefs(string key)
         { return PlayerPrefs.HasKey(key); }
 
         /// <summary> 如果文件存在，则删除保存的文件。</summary>
@@ -57,7 +28,7 @@ namespace WManager.Save
         /// <returns></returns>
         public static void DeleteData(string path)
         {
-            string dataPath = Application.persistentDataPath + path + ".save";
+            string dataPath = Path.Combine(Application.persistentDataPath, path + ".save");
 
             if (File.Exists(dataPath)) File.Delete(dataPath);
             else Debug.LogError("指定的保存文件'" + path + "'不存在。");
@@ -65,7 +36,7 @@ namespace WManager.Save
         /// <summary> 如果键存在，则删除保存的键</summary>
         /// <param name="key">保存的键</param>
         /// <returns></returns>
-        public static void DeleteDataWeb(string key)
+        public static void DeletePref(string key)
         {
             if (PlayerPrefs.HasKey(key)) PlayerPrefs.DeleteKey(key);
             else Debug.LogError("指定的保存键'" + key + "'不存在。");
@@ -81,19 +52,29 @@ namespace WManager.Save
                 if (typeof(T) == typeof(Transform))
                 {
                     var ft = data as Transform;
+                    if (ft == null)
+                    {
+                        Debug.LogError("保存" + path + "失败: Transform数据不能为null");
+                        return;
+                    }
                     Save_TransformData tData = new Save_TransformData(ft);
-                    Save_Encryption.Save(tData, path);
+                    SaveEncryption.Save(tData, path);
                 }
                 else if (typeof(T) == typeof(RectTransform))
                 {
                     var ft = data as RectTransform;
+                    if (ft == null)
+                    {
+                        Debug.LogError("保存" + path + "失败: RectTransform数据不能为null");
+                        return;
+                    }
                     Save_RectTransformData tData = new Save_RectTransformData(ft);
-                    Save_Encryption.Save(tData, path);
+                    SaveEncryption.Save(tData, path);
                 }
                 else
                 {
                     // 默认的序列化保存方法
-                    Save_Encryption.Save(data, path);
+                    SaveEncryption.Save(data, path);
                 }
             }
             catch (Exception e)
@@ -105,26 +86,36 @@ namespace WManager.Save
         /// <summary> 将数据保存到加密内存中。</summary>
         /// <param name="data">要保存的数据，如“Albert”，或0、1.5、false等。</param>
         /// <param name="key">要保存数据的键，如“Albert”。</param>
-        public static void SaveWeb<T>(T data, string key)
+        public static void SaveToPrefs<T>(T data, string key)
         {
             try
             {
                 if (typeof(T) == typeof(Transform))
                 {
                     var ft = data as Transform;
+                    if (ft == null)
+                    {
+                        Debug.LogError("保存" + key + "失败: Transform数据不能为null");
+                        return;
+                    }
                     Save_TransformData tData = new Save_TransformData(ft);
-                    Save_Encryption.SaveWeb(tData, key);
+                    SaveEncryption.SaveToPrefs(tData, key);
                 }
                 else if (typeof(T) == typeof(RectTransform))
                 {
                     var ft = data as RectTransform;
+                    if (ft == null)
+                    {
+                        Debug.LogError("保存" + key + "失败: RectTransform数据不能为null");
+                        return;
+                    }
                     Save_RectTransformData tData = new Save_RectTransformData(ft);
-                    Save_Encryption.SaveWeb(tData, key);
+                    SaveEncryption.SaveToPrefs(tData, key);
                 }
                 else
                 {
                     // 默认的序列化保存方法
-                    Save_Encryption.SaveWeb(data, key);
+                    SaveEncryption.SaveToPrefs(data, key);
                 }
             }
             catch (Exception e)
@@ -142,35 +133,34 @@ namespace WManager.Save
             {
                 if (typeof(T) == typeof(Transform))
                 {
-                    var tData = Save_Encryption.Load<Save_TransformData>(path);
-                    Transform transform;
-                    GameObject go = new GameObject();
-                    transform = go.transform;
-                    transform.localPosition = tData.localPosition;
-                    transform.localRotation = tData.localRotation;
+                    var tData = SaveEncryption.Load<Save_TransformData>(path);
+                    if (tData == null) return default;
+                    
+                    GameObject go = new GameObject("[LoadedTransform]");
+                    go.hideFlags = HideFlags.HideAndDontSave;
+                    Transform transform = go.transform;
                     transform.localScale = tData.localScale;
                     transform.position = tData.position;
                     transform.rotation = tData.rotation;
-                    transform.eulerAngles = tData.eulerAngles;
-                    transform.localEulerAngles = tData.localEulerAngles;
-                    Destroy(go);
                     return (T)(object)transform;
                 }
                 else if (typeof(T) == typeof(RectTransform))
                 {
-                    var tData = Save_Encryption.Load<Save_RectTransformData>(path);
-                    GameObject go = new GameObject();
+                    var tData = SaveEncryption.Load<Save_RectTransformData>(path);
+                    if (tData == null) return default;
+                    
+                    GameObject go = new GameObject("[LoadedRectTransform]");
+                    go.hideFlags = HideFlags.HideAndDontSave;
                     RectTransform rectTransform = go.AddComponent<RectTransform>();
                     rectTransform.anchoredPosition = tData.anchoredPosition;
                     rectTransform.eulerAngles = tData.eulerAngles;
                     rectTransform.sizeDelta = tData.sizeDelta;
-                    Destroy(go);
                     return (T)(object)rectTransform;
                 }
                 else
                 {
                     // 默认的序列化保存方法
-                    return Save_Encryption.Load<T>(path);
+                    return SaveEncryption.Load<T>(path);
                 }
             }
             catch (Exception e)
@@ -183,41 +173,40 @@ namespace WManager.Save
         /// <summary> 从Web的加密内存中返回数据对象(如果存在)。 </summary>
         /// <param name="key">加载数据的密钥,比如'Albert'.</param>
         /// <returns></returns>
-        public static T LoadWeb<T>(string key)
+        public static T LoadFromPrefs<T>(string key)
         {
             try
             {
                 if (typeof(T) == typeof(Transform))
                 {
-                    var tData = Save_Encryption.LoadWeb<Save_TransformData>(key);
-                    Transform transform;
-                    GameObject go = new GameObject();
-                    transform = go.transform;
-                    transform.localPosition = tData.localPosition;
-                    transform.localRotation = tData.localRotation;
+                    var tData = SaveEncryption.LoadFromPrefs<Save_TransformData>(key);
+                    if (tData == null) return default;
+                    
+                    GameObject go = new GameObject("[LoadedTransform]");
+                    go.hideFlags = HideFlags.HideAndDontSave;
+                    Transform transform = go.transform;
                     transform.localScale = tData.localScale;
                     transform.position = tData.position;
                     transform.rotation = tData.rotation;
-                    transform.eulerAngles = tData.eulerAngles;
-                    transform.localEulerAngles = tData.localEulerAngles;
-                    Destroy(go);
                     return (T)(object)transform;
                 }
                 else if (typeof(T) == typeof(RectTransform))
                 {
-                    var tData = Save_Encryption.LoadWeb<Save_RectTransformData>(key);
-                    GameObject go = new GameObject();
+                    var tData = SaveEncryption.LoadFromPrefs<Save_RectTransformData>(key);
+                    if (tData == null) return default;
+                    
+                    GameObject go = new GameObject("[LoadedRectTransform]");
+                    go.hideFlags = HideFlags.HideAndDontSave;
                     RectTransform rectTransform = go.AddComponent<RectTransform>();
                     rectTransform.anchoredPosition = tData.anchoredPosition;
                     rectTransform.eulerAngles = tData.eulerAngles;
                     rectTransform.sizeDelta = tData.sizeDelta;
-                    Destroy(go);
                     return (T)(object)rectTransform;
                 }
                 else
                 {
                     // 默认的序列化保存方法
-                    return Save_Encryption.LoadWeb<T>(key);
+                    return SaveEncryption.LoadFromPrefs<T>(key);
                 }
             }
             catch (Exception e)
@@ -226,5 +215,32 @@ namespace WManager.Save
                 return default(T);
             }
         }
+
+        #region 异步版本（UniTask）
+
+        /// <summary>
+        /// 异步保存。文件 IO + 加解密在后台线程执行，大数据不会卡主线程。
+        /// 注意：在调度到线程池前，会先在主线程把 "path" 解析为 <see cref="Application.persistentDataPath"/> 下的绝对路径，
+        /// 避免后台线程调用 Application.persistentDataPath 触发 "can only be called from the main thread" 异常。
+        /// </summary>
+        public static UniTask SaveAsync<T>(T data, string path, CancellationToken cancellationToken = default)
+        {
+            // 在调用线程（一般为 Unity 主线程）解析出绝对路径，确保 Application.persistentDataPath 被合法访问。
+            string dataPath = Path.Combine(Application.persistentDataPath, path + ".save");
+            return UniTask.RunOnThreadPool(() => SaveEncryption.SaveToAbsolutePath(data, dataPath), cancellationToken: cancellationToken);
+        }
+
+        /// <summary>
+        /// 异步加载。文件 IO + 加解密在后台线程执行。
+        /// 注意：Transform / RectTransform 的重建必须在主线程（涉及 GameObject 创建），由上层调用 await 后处理。
+        /// 同样会在调度到线程池前先在主线程解析持久化路径。
+        /// </summary>
+        public static UniTask<T> LoadAsync<T>(string path, CancellationToken cancellationToken = default)
+        {
+            string dataPath = Path.Combine(Application.persistentDataPath, path + ".save");
+            return UniTask.RunOnThreadPool(() => SaveEncryption.LoadFromAbsolutePath<T>(dataPath, path), cancellationToken: cancellationToken);
+        }
+
+        #endregion
     }
 }
