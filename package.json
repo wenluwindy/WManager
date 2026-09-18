@@ -1,7 +1,7 @@
 {
   "name": "com.wmanager.wmanager",
   "displayName": "WManager",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "unity": "2021.3",
   "description": "WManager — Unity 通用运行时框架：UI、Addressables、计时器、事件、音频、存档、网络、相机、小地图、调试与常用扩展。模块解耦、UniTask 异步优先、零业务侵入。",
   "keywords": [

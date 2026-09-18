@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
 using UnityEngine.UI;
+using WManager;
 
 namespace WManager.UIEditor
 {
