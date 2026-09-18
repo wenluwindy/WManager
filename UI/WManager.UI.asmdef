@@ -1,0 +1,20 @@
+{
+    "name": "WManager.UI",
+    "rootNamespace": "WManager",
+    "references": [
+        "WManager.Core",
+        "WManager.AssetsResource",
+        "UniTask",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

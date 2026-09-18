@@ -1,0 +1,24 @@
+{
+    "name": "WManager.UI.Editor",
+    "rootNamespace": "WManager.UIEditor",
+    "references": [
+        "WManager.Core",
+        "WManager.UI",
+        "UniTask",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI",
+        "Unity.Addressables.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
+

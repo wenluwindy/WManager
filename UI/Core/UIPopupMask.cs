@@ -1,8 +1,10 @@
 using System;
-using DG.Tweening;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+#if DOTWEEN
+using DG.Tweening;
+#endif
 
 namespace WManager
 {
@@ -16,7 +18,9 @@ namespace WManager
     {
         private Image _image;
         private Color _color;
+#if DOTWEEN
         private Tween _tween;
+#endif
 
         /// <summary>点击遮罩空白处</summary>
         public event Action Clicked;
@@ -53,10 +57,22 @@ namespace WManager
                 return;
             }
 
-            _tween = _image
-                .DOFade(_color.a, duration)
+#if DOTWEEN
+            _tween = DOTween.To(
+                    () => _image.color.a,
+                    a =>
+                    {
+                        var c = _image.color;
+                        c.a = a;
+                        _image.color = c;
+                    },
+                    _color.a,
+                    duration)
                 .SetEase(Ease.OutQuad)
                 .SetUpdate(true);
+#else
+            _image.color = _color;
+#endif
         }
 
         internal void FadeOut(float duration, bool deactivateOnComplete = true)
@@ -73,8 +89,17 @@ namespace WManager
                 return;
             }
 
-            _tween = _image
-                .DOFade(0f, duration)
+#if DOTWEEN
+            _tween = DOTween.To(
+                    () => _image.color.a,
+                    a =>
+                    {
+                        var c = _image.color;
+                        c.a = a;
+                        _image.color = c;
+                    },
+                    0f,
+                    duration)
                 .SetEase(Ease.OutQuad)
                 .SetUpdate(true)
                 .OnComplete(() =>
@@ -82,6 +107,12 @@ namespace WManager
                     if (deactivateOnComplete && this != null)
                         gameObject.SetActive(false);
                 });
+#else
+            _image.color = new Color(_color.r, _color.g, _color.b, 0f);
+
+            if (deactivateOnComplete)
+                gameObject.SetActive(false);
+#endif
         }
 
         void IPointerClickHandler.OnPointerClick(PointerEventData eventData)
@@ -98,10 +129,12 @@ namespace WManager
 
         private void KillTween()
         {
+#if DOTWEEN
             if (_tween != null && _tween.IsActive())
                 _tween.Kill();
 
             _tween = null;
+#endif
         }
     }
 }

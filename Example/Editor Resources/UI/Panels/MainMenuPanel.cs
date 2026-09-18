@@ -1,9 +1,11 @@
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using MultiServer.Sdk;
 using UnityEngine;
 using UnityEngine.UI;
 using WManager;
+#if WMANAGER_MULTISERVER
+using MultiServer.Sdk;
+#endif
 
 /// <summary>
 /// 主菜单示例。演示三种最常见的打开方式：
@@ -63,6 +65,9 @@ public class MainMenuPanel : UIPanel
     /// <summary>拉公告并弹出第一条</summary>
     private async UniTask ShowLatestNoticeAsync()
     {
+#if !WMANAGER_MULTISERVER
+        await UniTask.CompletedTask;
+#else
         List<Notice> notices;
 
         try
@@ -86,6 +91,7 @@ public class MainMenuPanel : UIPanel
             Message = notice.content,
             Style = MessageBoxStyle.Confirm
         });
+#endif
     }
 
     private async UniTaskVoid LoadModelAsync()

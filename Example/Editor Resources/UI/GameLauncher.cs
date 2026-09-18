@@ -1,10 +1,12 @@
 using System;
 using Cysharp.Threading.Tasks;
-using MultiServer.Sdk;
 using TMPro;
 using UnityEngine;
 using UnityEngine.AddressableAssets.Initialization;
 using WManager;
+#if WMANAGER_MULTISERVER
+using MultiServer.Sdk;
+#endif
 
 /// <summary>
 /// 游戏启动流程。
@@ -18,6 +20,9 @@ using WManager;
 /// Profile 里 {MultiServer.Sdk.ResourceApi.RemoteLoadUrl} 这种花括号变量，
 /// 只在「加载 Catalog 的那一刻」求值一次，结果会被固化进所有资源的定位信息里。
 /// 只要 Addressables 在地址还是空串时完成了初始化，本次运行的远程资源就再也救不回来。
+///
+/// 未定义 WMANAGER_MULTISERVER 时走精简启动（仅 Addressables + 主菜单），
+/// 便于把 WManager 单独导入到没有 MultiServer 的工程。
 /// </summary>
 public class GameLauncher : MonoBehaviour
 {
@@ -49,16 +54,20 @@ public class GameLauncher : MonoBehaviour
     [Tooltip("必须是场景里的静态对象，不能是 Addressables 资源 —— 这时候 Addressables 还没初始化")]
     [SerializeField] private TMP_Text bootStatusText;
 
+#if WMANAGER_MULTISERVER
     /// <summary>
     /// Addressables Profile 里 Remote.LoadPath 必须填成 "{这个字符串}"（带花括号）
     /// </summary>
     private const string RemoteUrlVariable = "MultiServer.Sdk.ResourceApi.RemoteLoadUrl";
+#endif
 
     private UpdatePanel _updatePanel;
+#if WMANAGER_MULTISERVER
     private string _checkError;
 
     /// <summary>服务器明确返回了业务错误（AppKey 无效等），这种情况不该走离线兜底掩盖问题</summary>
     private bool _serverRejected;
+#endif
 
     private async void Start()
     {
@@ -74,6 +83,33 @@ public class GameLauncher : MonoBehaviour
     }
 
     private async UniTask LaunchAsync()
+    {
+#if WMANAGER_MULTISERVER
+        await LaunchWithMultiServerAsync();
+#else
+        await LaunchWithoutMultiServerAsync();
+#endif
+    }
+
+#if !WMANAGER_MULTISERVER
+    private async UniTask LaunchWithoutMultiServerAsync()
+    {
+        Debug.LogWarning(
+            "[GameLauncher] 未定义脚本宏 WMANAGER_MULTISERVER，跳过 MultiServer 热更流程。");
+
+        SetStatus("正在初始化资源系统...");
+        if (!await AddressablesManager.Instance.InitializeAsync())
+        {
+            SetStatus("资源系统初始化失败，请确认 Addressables 已配置");
+            return;
+        }
+
+        await UI.OpenAsync<MainMenuPanel>(new UIContext().Set("title", "主菜单"));
+    }
+#endif
+
+#if WMANAGER_MULTISERVER
+    private async UniTask LaunchWithMultiServerAsync()
     {
         // ==================== 阶段一：只走 HTTP ====================
 
@@ -327,6 +363,7 @@ public class GameLauncher : MonoBehaviour
             Style = MessageBoxStyle.ConfirmCancel
         });
     }
+#endif
 
     /// <summary>
     /// UpdatePanel 打开之前状态文字走场景里的静态 Text，之后走面板自己的

@@ -422,6 +422,10 @@ namespace WManager
         /// Esc / Android 返回键。返回 true 表示本面板已经自行处理，
         /// 框架不再执行默认的关闭弹窗或返回上一页。
         /// </summary>
+        /// <remarks>
+        /// 基类使用 <c>protected internal</c>，供同程序集的 <see cref="UIManager"/> 调用。
+        /// 其它程序集中的业务面板请用 <c>protected override</c> 重写。
+        /// </remarks>
         protected internal virtual bool OnBackPressed() => false;
     }
 }

@@ -1,0 +1,19 @@
+{
+    "name": "WManager.AssetsResource",
+    "rootNamespace": "WManager",
+    "references": [
+        "WManager.Core",
+        "Unity.Addressables",
+        "Unity.ResourceManager",
+        "UniTask"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

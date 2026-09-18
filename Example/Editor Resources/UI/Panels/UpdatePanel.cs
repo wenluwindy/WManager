@@ -54,5 +54,5 @@ public class UpdatePanel : UIPanel
     }
 
     /// <summary>更新过程中不允许用返回键中断</summary>
-    protected internal override bool OnBackPressed() => true;
+    protected override bool OnBackPressed() => true;
 }

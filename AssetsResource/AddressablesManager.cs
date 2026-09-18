@@ -101,7 +101,8 @@ namespace WManager
             try
             {
                 checkHandle = Addressables.CheckForCatalogUpdates(false);
-                var catalogs = await checkHandle.ToUniTask();
+                await checkHandle.ToUniTask();
+                var catalogs = checkHandle.Result;
 
                 if (catalogs == null || catalogs.Count == 0)
                     return false;
@@ -145,7 +146,8 @@ namespace WManager
             try
             {
                 locationHandle = Addressables.LoadResourceLocationsAsync(label);
-                var locations = await locationHandle.ToUniTask();
+                await locationHandle.ToUniTask();
+                var locations = locationHandle.Result;
 
                 if (locations == null || locations.Count == 0)
                 {
@@ -156,7 +158,8 @@ namespace WManager
                 var sizeHandle = Addressables.GetDownloadSizeAsync(label);
                 try
                 {
-                    return await sizeHandle.ToUniTask();
+                    await sizeHandle.ToUniTask();
+                    return sizeHandle.Result;
                 }
                 finally
                 {
@@ -255,7 +258,8 @@ namespace WManager
                 var handle = Addressables.ClearDependencyCacheAsync(label, false);
                 try
                 {
-                    return await handle.ToUniTask();
+                    await handle.ToUniTask();
+                    return handle.Result;
                 }
                 finally
                 {

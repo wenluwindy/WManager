@@ -1,9 +1,11 @@
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using DG.Tweening;
 using UnityEngine;
 using UnityEngine.Events;
+#if DOTWEEN
+using DG.Tweening;
+#endif
 #if ODIN_INSPECTOR
 using Sirenix.OdinInspector;
 #endif
@@ -27,6 +29,7 @@ namespace WManager
             Shown
         }
 
+#if DOTWEEN
         /// <summary>一段正在进行的过渡</summary>
         private sealed class Running
         {
@@ -41,6 +44,7 @@ namespace WManager
                 Completion?.TrySetCanceled();
             }
         }
+#endif
 
 #if ODIN_INSPECTOR
         [BoxGroup("基础设置"), LabelText("独立于 TimeScale")]
@@ -73,10 +77,12 @@ namespace WManager
         [Min(0f)]
         public float delay = 0f;
 
+#if DOTWEEN
 #if ODIN_INSPECTOR
         [BoxGroup("动画设置"), LabelText("缓动类型")]
 #endif
         public Ease easeType = Ease.OutQuad;
+#endif
 
 #if ODIN_INSPECTOR
         [BoxGroup("缩放效果"), LabelText("启用缩放")]
@@ -139,11 +145,23 @@ namespace WManager
 
         private RectTransform _rectTransform;
         private CanvasGroup _canvasGroup;
+#if DOTWEEN
         private Running _running;
+#endif
         private VisualState _intent = VisualState.Hidden;
 
         /// <inheritdoc />
-        public bool IsPlaying => _running != null;
+        public bool IsPlaying
+        {
+            get
+            {
+#if DOTWEEN
+                return _running != null;
+#else
+                return false;
+#endif
+            }
+        }
 
         private void Awake()
         {
@@ -161,7 +179,9 @@ namespace WManager
 
         private void OnDestroy()
         {
+#if DOTWEEN
             Detach()?.Cancel();
+#endif
         }
 
         private void InitializeComponents()
@@ -184,6 +204,7 @@ namespace WManager
         {
             InitializeComponents();
 
+#if DOTWEEN
             var previous = Detach();
 
             // 已经是显示状态且没有动画在跑：直接落到目标值，不空转一个 duration
@@ -203,6 +224,13 @@ namespace WManager
 
             return PlayAsync(targetScale, targetAlpha, targetPosition,
                 OnShowStart, OnShowComplete, previous, cancellationToken);
+#else
+            _intent = VisualState.Shown;
+            OnShowStart?.Invoke();
+            ApplyValues(targetScale, targetAlpha, targetPosition);
+            OnShowComplete?.Invoke();
+            return UniTask.CompletedTask;
+#endif
         }
 
         /// <inheritdoc />
@@ -210,6 +238,7 @@ namespace WManager
         {
             InitializeComponents();
 
+#if DOTWEEN
             var previous = Detach();
 
             if (previous == null && _intent == VisualState.Hidden)
@@ -224,13 +253,22 @@ namespace WManager
 
             return PlayAsync(startScale, startAlpha, startPosition,
                 OnHideStart, OnHideComplete, previous, cancellationToken);
+#else
+            _intent = VisualState.Hidden;
+            OnHideStart?.Invoke();
+            ApplyValues(startScale, startAlpha, startPosition);
+            OnHideComplete?.Invoke();
+            return UniTask.CompletedTask;
+#endif
         }
 
         /// <inheritdoc />
         public void SetShownImmediate()
         {
             InitializeComponents();
+#if DOTWEEN
             Detach()?.Cancel();
+#endif
             _intent = VisualState.Shown;
             ApplyValues(targetScale, targetAlpha, targetPosition);
         }
@@ -239,13 +277,16 @@ namespace WManager
         public void SetHiddenImmediate()
         {
             InitializeComponents();
+#if DOTWEEN
             Detach()?.Cancel();
+#endif
             _intent = VisualState.Hidden;
             ApplyValues(startScale, startAlpha, startPosition);
         }
 
         // ------------------------------------------------------------ 内部实现
 
+#if DOTWEEN
         private async UniTask PlayAsync(
             Vector3 scale,
             float alpha,
@@ -276,10 +317,25 @@ namespace WManager
                 sequence.Join(_rectTransform.DOScale(scale, duration).SetEase(easeType));
 
             if (animatesFade)
-                sequence.Join(_canvasGroup.DOFade(alpha, duration).SetEase(easeType));
+            {
+                sequence.Join(DOTween.To(
+                        () => _canvasGroup.alpha,
+                        v => _canvasGroup.alpha = v,
+                        alpha,
+                        duration)
+                    .SetEase(easeType));
+            }
 
             if (animatesMove)
-                sequence.Join(_rectTransform.DOAnchorPos(position, duration).SetEase(easeType));
+            {
+                Vector2 targetPos = position;
+                sequence.Join(DOTween.To(
+                        () => (Vector2)_rectTransform.anchoredPosition,
+                        v => _rectTransform.anchoredPosition = v,
+                        targetPos,
+                        duration)
+                    .SetEase(easeType));
+            }
 
             if (delay > 0f)
                 sequence.SetDelay(delay);
@@ -327,6 +383,7 @@ namespace WManager
             _running = null;
             return running;
         }
+#endif
 
         private void ApplyValues(Vector3 scale, float alpha, Vector3 position)
         {

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
-using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+#if DOTWEEN
+using DG.Tweening;
+#endif
 
 namespace WManager
 {
@@ -102,7 +104,9 @@ namespace WManager
     {
         private CanvasGroup _canvasGroup;
         private TextMeshProUGUI _text;
+#if DOTWEEN
         private Sequence _sequence;
+#endif
         private Action<UIToastItem> _onFinished;
 
         public static UIToastItem Create(Transform parent)
@@ -157,11 +161,26 @@ namespace WManager
 
             _canvasGroup.alpha = 0f;
 
+#if DOTWEEN
             _sequence = DOTween.Sequence().SetUpdate(true);
-            _sequence.Append(_canvasGroup.DOFade(1f, fadeDuration).SetEase(Ease.OutQuad));
+            _sequence.Append(DOTween.To(
+                    () => _canvasGroup.alpha,
+                    v => _canvasGroup.alpha = v,
+                    1f,
+                    fadeDuration)
+                .SetEase(Ease.OutQuad));
             _sequence.AppendInterval(Mathf.Max(0f, duration));
-            _sequence.Append(_canvasGroup.DOFade(0f, fadeDuration).SetEase(Ease.InQuad));
+            _sequence.Append(DOTween.To(
+                    () => _canvasGroup.alpha,
+                    v => _canvasGroup.alpha = v,
+                    0f,
+                    fadeDuration)
+                .SetEase(Ease.InQuad));
             _sequence.OnComplete(Finish);
+#else
+            _canvasGroup.alpha = 1f;
+            Finish();
+#endif
         }
 
         public void KillAndRecycle()
@@ -185,10 +204,12 @@ namespace WManager
 
         private void KillSequence()
         {
+#if DOTWEEN
             if (_sequence != null && _sequence.IsActive())
                 _sequence.Kill();
 
             _sequence = null;
+#endif
         }
     }
 }

@@ -1,7 +1,7 @@
 {
   "name": "com.wmanager.wmanager",
   "displayName": "WManager",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "unity": "2021.3",
   "description": "WManager — Unity 通用运行时框架：UI、Addressables、计时器、事件、音频、存档、网络、相机、小地图、调试与常用扩展。模块解耦、UniTask 异步优先、零业务侵入。",
   "keywords": [
@@ -23,12 +23,14 @@
     "name": "WManager"
   },
   "dependencies": {
-    "com.cysharp.unitask": "2.5.10"
+    "com.cysharp.unitask": "2.5.10",
+    "com.unity.addressables": "1.21.19",
+    "com.unity.ugui": "1.0.0"
   },
   "samples": [
     {
       "displayName": "WManager Examples",
-      "description": "示例场景、Prefab 与 13 个示例脚本（详见 WManager/Example/README.md）。注意：示例使用了 MultiServer.Sdk 等本工程私有程序集，导入前请在导入器中取消勾选，或在导入后删除对应引用。",
+      "description": "示例场景、Prefab 与示例脚本（详见 WManager/Example/README.md）。MultiServer 热更流程需自行定义脚本宏 WMANAGER_MULTISERVER；无该宏时 GameLauncher 走精简启动。",
       "path": "Example"
     }
   ]

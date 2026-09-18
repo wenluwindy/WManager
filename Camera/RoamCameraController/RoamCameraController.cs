@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
-using DG.Tweening;
 using Sirenix.OdinInspector;
+#if DOTWEEN
+using DG.Tweening;
+#endif
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -196,8 +198,10 @@ namespace WManager
 
         //移动量
         private Vector3 translation = Vector3.zero;
+#if DOTWEEN
         //Tween动画
         private Tween tween;
+#endif
 
         private CameraState initialCameraState;
         private CameraState targetCameraState;
@@ -366,8 +370,9 @@ namespace WManager
         /// <param name="duration">时长</param>
         public void Focus(Vector3 position, Vector3 rotation, float duration)
         {
-            tween?.Kill();
             toggle = false;
+#if DOTWEEN
+            tween?.Kill();
             transform.DORotate(rotation, duration);
             tween = transform.DOMove(position, duration).Play()
                 .OnKill(() =>
@@ -377,6 +382,12 @@ namespace WManager
                     targetCameraState.SetFromTransform(transform);
                     tween = null;
                 });
+#else
+            transform.SetPositionAndRotation(position, Quaternion.Euler(rotation));
+            toggle = true;
+            interpolatingCameraState.SetFromTransform(transform);
+            targetCameraState.SetFromTransform(transform);
+#endif
         }
         #endregion
     }
